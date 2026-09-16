@@ -1,0 +1,6 @@
+.git
+.vercel
+node_modules
+*.pptx
+preview*.png
+tmp-*

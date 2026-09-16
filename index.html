@@ -2,915 +2,356 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0d0f14" />
   <title>CatMoa — 교사를 위한 일정 수집 도구</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
-
-    :root {
-      --cream: #fff9ef;
-      --cream-deep: #f7e8cc;
-      --ink: #332920;
-      --muted: #8a7767;
-      --orange: #cb7d2b;
-      --orange-bright: #ee9a3a;
-      --orange-dark: #92551c;
-      --pink: #ef6d8e;
-      --green: #72aa8a;
-      --blue: #7296d8;
-      --shadow: 0 18px 60px rgba(103, 65, 27, .14);
-      --radius: 28px;
+    :root{
+      --ink:#101218; --paper:#f5f1e9; --white:#fffdf8; --muted:#676a73;
+      --orange:#ff9f1c; --pink:#ff4f87; --yellow:#ffd84d; --blue:#4d82ff;
+      --green:#4bc78f; --line:rgba(16,18,24,.13); --shadow:0 24px 80px rgba(10,12,18,.18);
+      --ease:cubic-bezier(.2,.8,.2,1);
     }
-
-    * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-    body {
-      font-family: "Noto Sans KR", "Pretendard", system-ui, sans-serif;
-      color: var(--ink);
-      background: #17120e;
-      word-break: keep-all;
-      user-select: none;
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b10;color:var(--ink)}
+    body{font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;word-break:keep-all}
+    button{font:inherit}
+    .deck{position:relative;width:100%;height:100%;isolation:isolate}
+    .slide{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;padding:clamp(26px,4vw,62px) clamp(28px,6vw,96px) clamp(25px,3vw,46px);opacity:0;visibility:hidden;transform:translateX(5%);transition:opacity .48s var(--ease),transform .62s var(--ease),visibility .62s;background:var(--paper);overflow:hidden}
+    .slide.active{opacity:1;visibility:visible;transform:none;z-index:2}
+    .slide.leaving{transform:translateX(-4%)}
+    .slide.dark{background:#101218;color:var(--white)}
+    .slide.sunny{background:#ffd84d}
+    .slide.rose{background:#ff5c8d;color:#fff}
+    .slide::before{content:"";position:absolute;width:32vw;height:32vw;border-radius:50%;right:-16vw;top:-19vw;background:var(--orange);filter:blur(1px);opacity:.12;pointer-events:none}
+    .dark::before{background:var(--pink);opacity:.16}
+    .kicker{display:flex;align-items:center;gap:12px;font-weight:800;font-size:clamp(12px,1.25vw,18px);letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+    .dark .kicker,.rose .kicker{color:rgba(255,255,255,.62)}
+    .pill{display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;border:1px solid currentColor;font-size:.78em;letter-spacing:.08em}
+    h1,h2,h3,p{margin:0}
+    h1{font-size:clamp(58px,8.6vw,144px);line-height:.87;letter-spacing:-.065em}
+    h2{font-size:clamp(36px,5.1vw,80px);line-height:1.07;letter-spacing:-.05em}
+    h3{font-size:clamp(18px,1.75vw,28px);line-height:1.25;letter-spacing:-.025em}
+    .lead{font-size:clamp(18px,2vw,31px);line-height:1.55;color:var(--muted);letter-spacing:-.025em}
+    .dark .lead,.rose .lead{color:rgba(255,255,255,.68)}
+    .accent{color:var(--pink)} .orange{color:var(--orange)} .blue{color:var(--blue)}
+    .marker{background:linear-gradient(transparent 64%,rgba(255,216,77,.8) 64%)}
+    .slide-body{display:flex;align-items:center;min-height:0;position:relative;z-index:1}
+    .footer{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:750;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;position:relative;z-index:5}
+    .dark .footer,.rose .footer{color:rgba(255,255,255,.48)}
+    .brand{display:flex;align-items:center;gap:9px}.brand-dot{width:10px;height:10px;background:var(--orange);border-radius:3px;transform:rotate(45deg)}
+    .split{width:100%;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);gap:clamp(32px,6vw,100px);align-items:center}
+    .stack{display:flex;flex-direction:column;gap:clamp(16px,2.4vw,34px)}
+    .cat-stage{position:relative;display:grid;place-items:center;height:min(68vh,680px);transform:translate3d(var(--parallax-x,0),var(--parallax-y,0),0);transition:transform .35s var(--ease)}
+    .cat-stage::before{content:"";position:absolute;width:76%;aspect-ratio:1;border-radius:50%;background:var(--yellow);filter:drop-shadow(0 25px 35px rgba(10,12,18,.12))}
+    .cat{position:relative;z-index:1;width:min(100%,620px);max-height:67vh;object-fit:contain;filter:drop-shadow(0 24px 28px rgba(20,18,12,.16))}
+    .cat.small{width:min(72%,430px)}
+    .tag-row{display:flex;gap:10px;flex-wrap:wrap}.tag{padding:10px 14px;border:1px solid var(--line);border-radius:999px;font-weight:750;font-size:clamp(12px,1vw,16px);background:rgba(255,255,255,.48)}
+    .dark .tag{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06)}
+    .hero-title .tiny{font-size:clamp(20px,2.2vw,34px);display:block;letter-spacing:-.03em;margin-bottom:12px}
+    .hero-title .moa{color:var(--orange)}
+    .flowline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:clamp(15px,1.3vw,20px);font-weight:800}.arrow{color:var(--pink)}
+    .timeline{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;position:relative}
+    .timeline::before{content:"";position:absolute;left:6%;right:6%;top:33px;height:2px;background:linear-gradient(90deg,var(--orange),var(--pink))}
+    .event{position:relative;padding-top:72px}.event::before{content:"";position:absolute;left:18px;top:24px;width:18px;height:18px;background:var(--paper);border:6px solid var(--pink);border-radius:50%;z-index:1}
+    .event time{font-size:clamp(25px,2.8vw,44px);font-weight:900;letter-spacing:-.04em}.event .source{margin:10px 0 6px;color:var(--pink);font-weight:850}.event p{color:var(--muted);font-weight:650;font-size:clamp(14px,1.2vw,18px)}
+    .inbox{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:18px}.notice{background:var(--white);border:1px solid var(--line);padding:22px;border-radius:20px;box-shadow:0 10px 30px rgba(10,12,18,.06);display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}.notice .icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:24px;background:#fff1d5}.notice strong{display:block;font-size:clamp(18px,1.6vw,25px);margin-bottom:4px}.notice span{color:var(--muted);font-size:14px}.notice.hot{border-color:rgba(255,79,135,.48);transform:translateY(-5px)}
+    .metrics{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.metric{padding:clamp(22px,2.6vw,40px);border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:28px}.metric b{display:block;font-size:clamp(48px,5.5vw,88px);line-height:1;color:var(--pink);letter-spacing:-.06em;margin-bottom:16px}.metric p{color:var(--muted);font-weight:700;line-height:1.5}
+    .insights{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.insight{padding:24px;border-top:3px solid var(--orange);background:rgba(255,255,255,.42)}.insight p{margin-top:10px;color:var(--muted);line-height:1.55;font-size:clamp(13px,1.1vw,17px)}
+    .reframe{width:100%;display:grid;grid-template-columns:1fr auto 1fr;gap:30px;align-items:center}.problem{padding:clamp(25px,3.2vw,52px);border-radius:30px;background:var(--white);border:1px solid var(--line);min-height:270px;display:flex;flex-direction:column;justify-content:space-between}.problem.new{background:#171a22;color:#fff}.problem small{font-weight:850;letter-spacing:.08em;color:var(--muted)}.problem p{font-size:clamp(22px,2.2vw,36px);font-weight:850;line-height:1.35;letter-spacing:-.035em}.problem.new p{font-size:clamp(27px,2.8vw,46px)}.pivot{width:72px;height:72px;background:var(--pink);color:#fff;border-radius:50%;display:grid;place-items:center;font-size:30px;font-weight:900}
+    .chapter{text-align:center;width:100%}.chapter .num{font-size:clamp(100px,20vw,330px);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:950;color:rgba(16,18,24,.055);letter-spacing:-.08em}.chapter h2{position:relative}.chapter p{margin-top:24px;font-size:clamp(18px,2vw,30px);font-weight:700}
+    .video-wrap{width:100%;display:grid;grid-template-columns:minmax(260px,.42fr) minmax(560px,1fr);gap:clamp(28px,4vw,70px);align-items:center}.video-copy{display:flex;flex-direction:column;gap:18px}.video-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:26px;overflow:hidden;background:#000;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.12)}.video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.video-link{display:inline-flex;align-items:center;gap:8px;width:max-content;color:inherit;text-decoration:none;font-weight:800;padding-bottom:4px;border-bottom:2px solid var(--pink)}
+    .feature-head{display:flex;align-items:flex-start;gap:22px;margin-bottom:clamp(20px,3vw,46px)}.feature-no{flex:0 0 auto;font-size:clamp(18px,1.8vw,28px);font-weight:950;color:var(--pink);border-top:5px solid var(--pink);padding-top:9px}.feature-head p{margin-top:10px;color:var(--muted);font-size:clamp(14px,1.2vw,18px)}
+    .checklist{display:grid;gap:12px}.check{display:grid;grid-template-columns:42px 1fr;gap:15px;padding:15px 0;border-bottom:1px solid var(--line)}.check i{font-style:normal;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:white;font-weight:900}.check p{color:var(--muted);font-size:clamp(13px,1vw,16px);margin-top:4px;line-height:1.45}
+    .routes{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.route{padding:20px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.56);display:flex;flex-direction:column;min-height:260px}.route .n{font-size:12px;font-weight:900;color:var(--pink);letter-spacing:.1em}.route .route-icon{font-size:34px;margin:18px 0}.route p{font-size:clamp(17px,1.45vw,23px);font-weight:850;line-height:1.25}.route span{font-size:13px;color:var(--muted);line-height:1.45;margin-top:8px}.route .method{margin-top:auto;padding-top:16px;border-top:1px solid var(--line);color:var(--blue);font-weight:800}
+    .pipeline{width:100%;display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:12px}.pipe{padding:clamp(18px,2vw,30px);border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);border-radius:22px;min-height:170px}.pipe .pipe-icon{font-size:32px}.pipe h3{margin:20px 0 8px}.pipe p{font-size:13px;color:rgba(255,255,255,.58);line-height:1.45}.pipe-arrow{font-size:28px;color:var(--pink)}
+    .steps{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.step{position:relative;padding:clamp(23px,2.6vw,42px);border-radius:26px;background:#171a22;color:#fff;min-height:265px}.step .step-n{font-size:12px;color:var(--orange);font-weight:900;letter-spacing:.12em}.step h3{font-size:clamp(25px,2.4vw,38px);margin:30px 0 14px}.step p{color:rgba(255,255,255,.6);line-height:1.55}.step::after{content:"";position:absolute;right:-18px;top:50%;width:36px;height:36px;border-radius:50%;background:var(--pink);z-index:2}.step:last-child::after{display:none}
+    .google-grid{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:18px}.google-card{padding:clamp(26px,3vw,46px);border:1px solid var(--line);border-radius:30px;background:var(--white);display:flex;gap:24px;align-items:center}.gicon{flex:0 0 auto;width:76px;height:76px;border-radius:22px;display:grid;place-items:center;font-size:34px;font-weight:950;color:#fff}.cal{background:var(--blue)}.task{background:var(--green)}.google-card p{color:var(--muted);margin-top:8px;line-height:1.5}.benefits{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.benefit{padding:16px 18px;border-top:2px solid var(--orange);font-weight:750;font-size:14px;line-height:1.45}
+    .states{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.state{text-align:center;padding:12px 8px;border-radius:18px;background:rgba(255,255,255,.5)}.state img{width:100%;aspect-ratio:1;object-fit:contain}.state b{display:block;font-size:14px}.state span{font-size:11px;color:var(--muted)}
+    .context-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;width:100%}.context{padding:22px;border:1px solid var(--line);border-radius:22px}.context .cicon{font-size:28px}.context h3{margin:17px 0 8px}.context p{font-size:13px;color:var(--muted);line-height:1.5}
+    .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;width:100%}.choice{padding:clamp(22px,2.8vw,44px);border-radius:26px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)}.choice .choice-icon{font-size:34px}.choice h3{font-size:clamp(22px,2vw,32px);margin:22px 0}.choice ul{list-style:none;padding:0;margin:0;display:grid;gap:12px;color:rgba(255,255,255,.62);font-size:clamp(13px,1.05vw,16px)}.choice li::before{content:"—";color:var(--orange);margin-right:8px}
+    .result{width:100%;display:grid;grid-template-columns:minmax(250px,.72fr) minmax(420px,1.28fr);gap:clamp(40px,7vw,120px);align-items:center}.result-figure{position:relative;padding:34px 0 28px 34px;isolation:isolate}.result-figure::before{content:"";position:absolute;z-index:-1;left:0;top:6px;width:clamp(190px,20vw,330px);aspect-ratio:1;border-radius:50%;background:rgba(255,79,135,.09)}.ratio{display:flex;align-items:flex-end;font-size:clamp(120px,15vw,240px);font-weight:950;letter-spacing:-.09em;line-height:.76;color:var(--pink)}.ratio small{font-size:.27em;letter-spacing:-.04em;line-height:1;margin:0 0 .02em .04em}.result-figure h2{font-size:clamp(34px,4vw,64px);margin-top:26px}.bars{display:grid;gap:28px}.bar-label{display:flex;justify-content:space-between;font-weight:850;margin-bottom:10px}.track{height:32px;background:rgba(16,18,24,.09);border-radius:99px;overflow:hidden}.fill{height:100%;border-radius:inherit;background:#272b35;transform-origin:left center}.fill.catmoa{width:33%;background:linear-gradient(90deg,var(--orange),var(--pink))}.fill.old{width:100%}
+    .route,.metric,.context,.choice,.google-card,.notice,.problem{transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease)}
+    .route:hover,.metric:hover,.context:hover,.choice:hover,.google-card:hover,.notice:hover,.problem:hover{animation:none!important;transform:translateY(-6px);box-shadow:0 18px 40px rgba(10,12,18,.12);border-color:rgba(255,79,135,.42)}
+    .manifesto{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.52fr);align-items:center;gap:4vw}.manifesto>div:first-child{min-width:0}.manifesto h2{font-size:clamp(30px,3.4vw,56px);line-height:1.17}.manifesto h2 span{display:block}.manifesto .line2{color:var(--orange)}.manifesto .line3{color:var(--pink)}
+    .controls{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;gap:7px;opacity:.28;transition:opacity .2s}.controls:hover{opacity:1}.ctrl{width:38px;height:38px;border:1px solid rgba(255,255,255,.18);background:rgba(10,12,18,.72);color:#fff;border-radius:12px;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(12px)}.ctrl:hover{background:var(--pink)}
+    .progress{position:fixed;z-index:60;left:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--orange),var(--pink));width:0;transition:width .45s var(--ease)}
+    .hint{position:fixed;z-index:45;left:18px;bottom:18px;color:rgba(255,255,255,.42);font-size:11px;letter-spacing:.06em;background:rgba(10,12,18,.48);padding:9px 12px;border-radius:99px;backdrop-filter:blur(10px);transition:opacity .4s}.hint.hide{opacity:0}
+    /* Slide-native motion: each content type enters in its own visual language. */
+    .slide.active .kicker{animation:fadeDown .55s .05s both}
+    .slide.active h1,.slide.active h2{animation:titleReveal .72s .12s both}
+    .slide.active .lead{animation:fadeUp .62s .28s both}
+    .slide.active .flowline,.slide.active .tag-row{animation:fadeUp .55s .42s both}
+    .slide.active .cat{animation:catEnter .78s .14s both,catFloat 4.2s 1.05s ease-in-out infinite}
+    .slide.active .timeline::before{animation:lineDraw .9s .35s both}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice){animation:cardRise .62s both}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(1){animation-delay:.2s}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(2){animation-delay:.29s}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(3){animation-delay:.38s}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(4){animation-delay:.47s}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(5){animation-delay:.56s}
+    .slide.active :is(.notice,.event,.metric,.insight,.check,.route,.pipe,.step,.google-card,.benefit,.state,.context,.choice):nth-child(6){animation-delay:.65s}
+    .slide.active .problem:first-child{animation:slideFromLeft .68s .2s both}.slide.active .problem.new{animation:slideFromRight .68s .34s both}.slide.active .pivot{animation:pivotPop .55s .55s both}
+    .slide.active .chapter .num{animation:softPulse 3.8s ease-in-out infinite}.slide.active .chapter p{animation:fadeUp .6s .42s both}
+    .slide.active .video-copy{animation:slideFromLeft .68s .14s both}.slide.active .video-frame{animation:videoZoom .82s .25s both}
+    .slide.active .pipe-arrow{animation:arrowPulse 1.25s .7s ease-in-out infinite}
+    .slide.active .gicon{animation:iconPop .55s .6s both}
+    .slide.active .ratio{animation:ratioPop .82s .18s both}.slide.active .result-figure::before{animation:haloGrow .82s .08s both}
+    .slide.active .fill{animation:barGrow 1.05s .5s var(--ease) both}.slide.active .bars>div:nth-child(2) .fill{animation-delay:.78s}
+    .slide.active .manifesto h2 span{animation:slideFromLeft .58s both}.slide.active .manifesto h2 span:nth-child(1){animation-delay:.16s}.slide.active .manifesto h2 span:nth-child(2){animation-delay:.27s}.slide.active .manifesto h2 span:nth-child(3){animation-delay:.38s}.slide.active .manifesto h2 span:nth-child(4){animation-delay:.49s}
+    @keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+    @keyframes titleReveal{from{opacity:0;transform:translateY(32px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
+    @keyframes cardRise{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+    @keyframes slideFromLeft{from{opacity:0;transform:translateX(-42px)}to{opacity:1;transform:none}}
+    @keyframes slideFromRight{from{opacity:0;transform:translateX(42px)}to{opacity:1;transform:none}}
+    @keyframes catEnter{from{opacity:0;transform:translateY(45px) scale(.82) rotate(-4deg)}to{opacity:1;transform:none}}
+    @keyframes catFloat{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-12px) rotate(.8deg)}}
+    @keyframes lineDraw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @keyframes pivotPop{0%{opacity:0;transform:scale(.2) rotate(-120deg)}70%{transform:scale(1.14) rotate(8deg)}100%{opacity:1;transform:none}}
+    @keyframes softPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.045)}}
+    @keyframes videoZoom{from{opacity:0;transform:perspective(900px) rotateY(-7deg) scale(.92)}to{opacity:1;transform:none}}
+    @keyframes arrowPulse{0%,100%{opacity:.35;transform:translateX(-3px)}50%{opacity:1;transform:translateX(4px)}}
+    @keyframes iconPop{0%{transform:scale(.3) rotate(-18deg)}70%{transform:scale(1.15) rotate(5deg)}100%{transform:none}}
+    @keyframes ratioPop{0%{opacity:0;transform:scale(.62) translateY(22px)}70%{transform:scale(1.05)}100%{opacity:1;transform:none}}
+    @keyframes haloGrow{from{opacity:0;transform:scale(.45)}to{opacity:1;transform:none}}
+    @keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @media(max-width:850px){.slide{padding:24px 25px 30px}.split,.manifesto{grid-template-columns:1fr}.cat-stage{position:absolute;right:-8vw;bottom:-12vh;width:55vw;height:55vh;opacity:.22}.timeline,.routes{grid-template-columns:1fr 1fr}.timeline::before{display:none}.event{padding-top:16px}.event::before{display:none}.metrics,.insights,.steps,.choices{grid-template-columns:1fr;gap:9px}.metric{padding:17px}.insight:nth-child(n+3),.step p{display:none}.reframe{grid-template-columns:1fr}.pivot{width:44px;height:44px;margin:auto}.problem{min-height:150px}.pipeline{grid-template-columns:1fr}.pipe{min-height:auto}.pipe-arrow{display:none}.benefits,.context-grid{grid-template-columns:1fr 1fr}.states{grid-template-columns:1fr 1fr}.google-grid{grid-template-columns:1fr}.google-card{padding:18px}.routes .route{min-height:210px}.lead{max-width:90%}.result{grid-template-columns:minmax(150px,.7fr) minmax(250px,1.3fr);gap:24px}.result-figure{padding:18px 0 14px 18px}.ratio{font-size:clamp(76px,18vw,108px)}.result-figure h2{font-size:clamp(28px,7vw,40px);margin-top:18px}.bars{gap:14px}.track{height:22px}}
+    @media(max-width:520px) and (max-aspect-ratio:1/1){.result{grid-template-columns:1fr;gap:16px}.result-figure{display:grid;grid-template-columns:auto 1fr;align-items:end;gap:16px}.result-figure>p{grid-column:1/-1}.result-figure h2{margin:0 0 8px}.ratio{font-size:96px}.result-figure::before{width:150px}.bars .lead{display:none}}
+    @media(max-height:850px) and (min-width:1000px){
+      .slide{padding:24px 4.2vw 22px}.slide-body{padding-top:6px}h2{font-size:clamp(34px,3.45vw,58px)}.lead{font-size:clamp(16px,1.35vw,22px);line-height:1.42}
+      .feature-head{gap:16px;margin-bottom:16px}.feature-head h2{font-size:clamp(32px,3.25vw,55px);line-height:1.02}.feature-head p{margin-top:6px;font-size:14px}.feature-no{font-size:22px;padding-top:6px}
+      .check{padding:10px 0}.check h3{font-size:20px}.check p{font-size:13px}.check i{width:30px;height:30px}.cat-stage{height:57vh}
+      .route{min-height:220px;padding:17px}.route .route-icon{margin:12px 0;font-size:29px}.route p{font-size:19px}.route .method{padding-top:10px}
+      .pipe{min-height:145px;padding:20px}.pipe h3{margin:14px 0 6px}.pipe .pipe-icon{font-size:27px}
+      .step{min-height:230px;padding:28px}.step h3{margin:22px 0 10px;font-size:32px}.step p{font-size:15px}.tag{padding:7px 12px}
+      .google-card{padding:28px}.context{padding:17px}.context .cicon{font-size:24px}.context h3{margin:11px 0 6px;font-size:22px}.choice{padding:28px}.choice h3{margin:15px 0}.states img{max-height:145px}.metric{padding:28px}.metric b{font-size:68px;margin-bottom:10px}.insight{padding:18px}
+      .video-wrap{grid-template-columns:minmax(240px,.36fr) minmax(520px,1fr);gap:42px}.video-frame{max-height:66vh}
     }
-    button { font: inherit; }
-    #deck { position: fixed; inset: 0; overflow: hidden; background: var(--cream); }
-    .slide {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      padding: clamp(42px, 5.6vw, 100px) clamp(48px, 7vw, 128px);
-      display: grid;
-      opacity: 0; visibility: hidden;
-      transform: translateX(70px) scale(.985);
-      transition: opacity .55s ease, transform .7s cubic-bezier(.2,.8,.2,1), visibility .55s;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 92% 12%, rgba(238,154,58,.12), transparent 25%),
-        radial-gradient(circle at 5% 95%, rgba(239,109,142,.07), transparent 25%),
-        var(--cream);
-    }
-    .slide::before {
-      content: ""; position: absolute; width: 32vw; height: 32vw; border: 1px solid rgba(203,125,43,.10);
-      border-radius: 50%; right: -18vw; top: -20vw; box-shadow: 0 0 0 5vw rgba(203,125,43,.025), 0 0 0 10vw rgba(203,125,43,.018);
-    }
-    .slide.active { opacity: 1; visibility: visible; transform: none; z-index: 2; }
-    .slide.prev { transform: translateX(-70px) scale(.985); }
-    .slide.active .reveal { animation: rise .72s both cubic-bezier(.2,.7,.2,1); animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
-    @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
-    @keyframes float { 50% { transform: translateY(-13px) rotate(1deg); } }
-    @keyframes pulse { 50% { transform: scale(1.05); filter: drop-shadow(0 18px 20px rgba(203,125,43,.18)); } }
-    @keyframes blink { 50% { opacity: .35; } }
-    @keyframes flow { to { stroke-dashoffset: -30; } }
-    @keyframes pop { 0%{transform:scale(.35);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-
-    .eyebrow { color: var(--orange); text-transform: uppercase; letter-spacing: .12em; font-size: clamp(13px, 1.15vw, 20px); font-weight: 800; }
-    h1, h2, h3, p { margin: 0; }
-    h1 { font-size: clamp(54px, 7vw, 126px); line-height: .98; letter-spacing: -.055em; }
-    h2 { font-size: clamp(34px, 4.25vw, 76px); line-height: 1.13; letter-spacing: -.045em; }
-    h3 { font-size: clamp(20px, 1.7vw, 31px); line-height: 1.25; }
-    .sub { margin-top: 14px; color: var(--muted); font-size: clamp(15px, 1.35vw, 24px); line-height: 1.55; }
-    .headline { position: relative; z-index: 2; }
-    .kicker { display: flex; align-items: center; gap: 20px; margin-bottom: 10px; }
-    .num {
-      width: clamp(48px, 5vw, 76px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
-      color: #fff; font-size: clamp(17px, 1.45vw, 25px); font-weight: 800;
-      background: linear-gradient(145deg, var(--orange-bright), var(--orange));
-      box-shadow: 0 10px 26px rgba(203,125,43,.24);
-    }
-    .card {
-      position: relative; background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.85);
-      border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(16px);
-      transition: transform .28s ease, box-shadow .28s ease, background .28s;
-      overflow: hidden;
-    }
-    .card::after { content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 15%, rgba(255,255,255,.7), transparent 60%); transform:translateX(-120%); transition:transform .65s; pointer-events:none; }
-    .card:hover { transform: translateY(-7px); box-shadow: 0 24px 70px rgba(103,65,27,.2); }
-    .card:hover::after { transform:translateX(120%); }
-    .card:active { transform: scale(.975); }
-    .card.has-detail { cursor: pointer; }
-    .card.has-detail:hover { border-color: rgba(203,125,43,.42); }
-    .detail-hint {
-      position:absolute; right:13px; bottom:12px; z-index:4; width:34px; height:34px;
-      display:grid; place-items:center; border-radius:50%; color:var(--orange-dark);
-      background:rgba(255,249,239,.94); border:1px solid rgba(203,125,43,.25);
-      box-shadow:0 7px 18px rgba(103,65,27,.16); opacity:.82; transition:.25s;
-      pointer-events:none; animation:cursorNudge 2.4s ease-in-out infinite;
-    }
-    .detail-hint svg { width:19px; height:19px; overflow:visible; }
-    .detail-hint .click-ring { transform-origin:15px 5px; animation:clickRing 2.4s ease-out infinite; }
-    .has-detail:hover .detail-hint { opacity:1; transform:scale(1.13); color:white; background:var(--orange); animation:none; }
-    @keyframes cursorNudge { 0%,55%,100%{transform:translate(0,0)} 68%{transform:translate(-4px,-4px)} 78%{transform:translate(0,0)} }
-    @keyframes clickRing { 0%,58%{opacity:0;transform:scale(.4)} 70%{opacity:1} 92%{opacity:0;transform:scale(1.5)} 100%{opacity:0} }
-    .attention { animation: attention 1.05s ease 2; }
-    @keyframes attention { 50% { transform: translateY(-7px) scale(1.015); box-shadow: 0 0 0 7px rgba(238,154,58,.12), 0 25px 75px rgba(103,65,27,.22); } }
-    .accent-card { background: linear-gradient(145deg, #d68a38, #b96c22); color: white; }
-    .highlight { color: var(--orange); }
-    .pill { display: inline-flex; align-items:center; gap:8px; padding: 8px 16px; border-radius:999px; color:var(--orange-dark); background:var(--cream-deep); font-weight:700; font-size:clamp(12px,1vw,17px); }
-    .dot { width: 10px; height: 10px; border-radius:50%; background:var(--orange-bright); box-shadow:0 0 0 6px rgba(238,154,58,.13); flex:0 0 auto; }
-    .cat { object-fit:contain; filter: drop-shadow(0 20px 30px rgba(107,63,24,.18)); pointer-events:none; }
-    .cat.float { animation: float 4.5s ease-in-out infinite; }
-    .quote { padding: 22px 30px; border-radius: 20px; color:var(--orange-dark); background:var(--cream-deep); font-size:clamp(15px,1.4vw,25px); font-weight:700; }
-
-    /* Cover */
-    .cover { place-items:center; text-align:center; background: radial-gradient(circle at 50% 40%, #fffdf9 0, #fdf1dc 55%, #f5dfbc 100%); }
-    .cover-wrap { z-index:1; display:grid; grid-template-columns: 1fr minmax(260px, 36vw); align-items:center; max-width:1350px; width:100%; text-align:left; }
-    .cover .eyebrow { margin-bottom:22px; }
-    .cover h1 span { color:var(--orange); }
-    .cover-copy { z-index:2; }
-    .cover-cat { width:100%; max-height:68vh; animation:float 4s ease-in-out infinite; }
-    .cover .meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:34px; }
-    .cover .meta span { padding:9px 14px; background:rgba(255,255,255,.7); border:1px solid rgba(203,125,43,.12); border-radius:999px; color:var(--muted); font-size:clamp(12px,1vw,17px); }
-    .click-hint { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); color:var(--muted); font-size:13px; letter-spacing:.12em; animation:blink 2s infinite; }
-
-    /* Common content layouts */
-    .standard { grid-template-rows:auto 1fr; gap: clamp(25px, 4vh, 52px); }
-    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-content:start; }
-    .stat { padding: clamp(22px,2.5vw,42px); min-height: 165px; }
-    .stat strong { display:block; font-size:clamp(35px,4vw,68px); line-height:1; margin-bottom:18px; }
-    .stat p { font-size:clamp(14px,1.12vw,20px); line-height:1.5; color:var(--muted); }
-    .accent-card p { color:rgba(255,255,255,.9); }
-    .insights { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
-    .insight { display:flex; gap:16px; padding:20px 10px; }
-    .insight p { color:var(--muted); margin-top:8px; line-height:1.5; font-size:clamp(13px,1vw,18px); }
-    .stats .quote { grid-column:1/-1; }
-
-    .problem-grid { display:grid; grid-template-columns:1fr .9fr 1fr; gap:30px; align-items:stretch; }
-    .problem-card { padding:clamp(24px,2.5vw,42px); display:flex; flex-direction:column; gap:20px; justify-content:center; }
-    .problem-card .label { font-weight:800; color:var(--muted); }
-    .problem-card p { font-size:clamp(18px,1.7vw,30px); line-height:1.55; font-weight:650; }
-    .problem-mid { display:grid; place-items:center; text-align:center; color:white; background:linear-gradient(150deg,#db923f,#b5641e); }
-    .problem-mid strong { font-size:clamp(26px,2.8vw,48px); line-height:1.35; }
-    .problem-mid .orbit { width:120px; aspect-ratio:1; border:1px solid rgba(255,255,255,.5); border-radius:50%; display:grid; place-items:center; font-size:48px; animation:pulse 3s infinite; }
-
-    .feature-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; align-content:center; }
-    .feature { padding:clamp(20px,2vw,34px); display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start; }
-    .icon { width:50px; aspect-ratio:1; border-radius:16px; display:grid; place-items:center; background:var(--cream-deep); font-size:24px; color:var(--orange); }
-    .feature p { color:var(--muted); margin-top:8px; font-size:clamp(13px,1.05vw,18px); line-height:1.5; }
-
-    .routes { display:grid; grid-template-columns:1fr auto 1fr; column-gap:28px; row-gap:14px; align-content:center; }
-    .route { padding:clamp(14px,1.5vw,24px); display:flex; align-items:center; gap:18px; min-height:90px; }
-    .route .badge { width:42px; aspect-ratio:1; display:grid; place-items:center; border-radius:13px; background:var(--cream-deep); font-weight:800; flex:0 0 auto; }
-    .route p { color:var(--muted); font-size:clamp(12px,.95vw,17px); margin-top:4px; }
-    .arrow { color:var(--orange-bright); font-size:34px; font-weight:900; animation:pulse 2.4s infinite; }
-    .route.output h3 { color:var(--orange); }
-
-    .privacy { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:center; }
-    .privacy-cards { display:grid; gap:18px; }
-    .privacy-card { padding:28px 30px; }
-    .privacy-card h3 { display:flex; gap:12px; align-items:center; }
-    .privacy-card p { color:var(--muted); margin-top:10px; line-height:1.55; }
-    .pipeline { padding:36px; min-height:360px; display:flex; flex-direction:column; justify-content:center; background:linear-gradient(145deg,#392b21,#5c3b23); color:#fff; }
-    .pipe { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:40px 0 26px; }
-    .node { width:24%; aspect-ratio:1.25; border-radius:20px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.16); display:grid; place-items:center; text-align:center; padding:12px; font-weight:700; }
-    .pipe-arrow { color:#f5ad59; font-size:24px; }
-    .pipeline small { color:rgba(255,255,255,.65); text-align:center; }
-
-    .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:center; }
-    .step { padding:30px; min-height:315px; display:flex; flex-direction:column; }
-    .step .step-no { color:var(--orange); font-weight:900; font-size:15px; letter-spacing:.1em; }
-    .step h3 { font-size:clamp(25px,2.4vw,43px); margin:16px 0; }
-    .step p { color:var(--muted); line-height:1.65; }
-    .step .benefit { margin-top:auto; padding-top:20px; color:var(--orange-dark); font-weight:700; }
-    .step::before { content:""; height:5px; width:0; background:linear-gradient(90deg,var(--orange),var(--pink)); position:absolute; inset:0 auto auto 0; transition:width .7s; }
-    .step:hover::before { width:100%; }
-
-    .google-grid { display:grid; grid-template-columns:.9fr 1.1fr; gap:40px; align-items:center; }
-    .destinations { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-    .destination { padding:34px; text-align:center; }
-    .destination .big-icon { font-size:70px; display:block; margin-bottom:16px; }
-    .destination h3 { font-size:clamp(22px,2vw,36px); }
-    .benefit-list { display:grid; gap:16px; }
-    .benefit-row { padding:20px 24px; display:flex; gap:16px; align-items:center; }
-    .benefit-row p { color:var(--muted); font-size:clamp(13px,1vw,18px); }
-
-    .widget-grid { display:grid; grid-template-columns:.8fr 1.2fr; gap:40px; align-items:center; }
-    .bullets { display:grid; gap:26px; }
-    .bullet { display:grid; grid-template-columns:auto 1fr; gap:18px; }
-    .bullet p { color:var(--muted); margin-top:7px; font-size:clamp(13px,1vw,18px); }
-    .widget { padding:28px; background:var(--cream-deep); }
-    .widget-title { color:var(--orange); font-weight:800; text-align:center; margin-bottom:16px; }
-    .status { background:#fff; padding:11px 18px; border-radius:18px; display:grid; grid-template-columns:64px 1fr 1fr; align-items:center; gap:14px; margin-top:12px; transition:.25s; cursor:pointer; }
-    .status:hover { transform:translateX(8px); }
-    .status img { width:64px; height:64px; object-fit:contain; }
-    .status p { color:var(--muted); font-size:clamp(12px,.95vw,16px); }
-
-    .context-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; align-content:center; }
-    .context { padding:25px 28px; display:flex; gap:18px; }
-    .context strong { color:var(--orange); font-size:clamp(20px,1.8vw,31px); }
-    .context p { color:var(--muted); margin-top:7px; line-height:1.45; font-size:clamp(13px,1vw,18px); }
-
-    .choice-layout { display:grid; grid-template-columns:1.2fr .8fr; gap:35px; align-items:center; }
-    .choice-list { display:grid; gap:18px; }
-    .choice { padding:24px 28px; display:grid; grid-template-columns:120px 1fr; gap:22px; align-items:center; }
-    .choice > strong { color:var(--orange); font-size:clamp(18px,1.5vw,26px); }
-    .choice p { color:var(--muted); line-height:1.5; }
-    .choice-cat { max-height:55vh; width:100%; object-fit:contain; }
-
-    .final { background:linear-gradient(135deg,#fae7c6,#fff9ef 58%,#f8e5c4); }
-    .final-wrap { align-self:center; max-width:1320px; z-index:1; }
-    .final h2 { font-size:clamp(36px,4.5vw,80px); line-height:1.48; }
-    .final h2 span { display:inline-block; color:var(--orange); }
-    .final-cat { position:absolute; right:5vw; bottom:-9vh; width:min(28vw,460px); opacity:.14; transform:rotate(-8deg); }
-    .end-chip { display:inline-flex; margin-top:30px; padding:12px 20px; border-radius:999px; background:var(--ink); color:white; font-weight:700; }
-
-    /* chrome */
-    #progress { position:fixed; top:0; left:0; height:5px; background:linear-gradient(90deg,var(--orange),var(--pink)); z-index:30; transition:width .45s ease; box-shadow:0 0 18px rgba(239,109,142,.45); }
-    #counter { position:fixed; z-index:30; right:28px; top:22px; font-size:13px; font-weight:800; letter-spacing:.12em; color:rgba(51,41,32,.55); }
-    #nav { position:fixed; z-index:30; bottom:22px; right:25px; display:flex; gap:8px; }
-    #nav button, #helpBtn { border:1px solid rgba(203,125,43,.18); background:rgba(255,255,255,.76); color:var(--ink); width:44px; height:44px; border-radius:50%; cursor:pointer; box-shadow:0 8px 24px rgba(69,42,18,.12); backdrop-filter:blur(14px); transition:.2s; }
-    #nav button:hover, #helpBtn:hover { background:var(--orange); color:#fff; transform:translateY(-3px); }
-    #helpBtn { position:fixed; z-index:30; left:24px; bottom:22px; }
-    #help { position:fixed; inset:0; z-index:50; display:grid; place-items:center; background:rgba(26,19,14,.58); backdrop-filter:blur(16px); opacity:0; visibility:hidden; transition:.3s; }
-    #help.show { opacity:1; visibility:visible; }
-    .help-card { width:min(520px,calc(100vw - 40px)); padding:36px; background:#fffaf2; border-radius:28px; box-shadow:var(--shadow); }
-    .help-card h3 { margin-bottom:20px; }
-    .key-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #eedfc9; color:var(--muted); }
-    kbd { background:#30261f; color:white; border-radius:8px; padding:4px 9px; font:600 13px inherit; }
-    #detailOverlay { position:fixed; inset:0; z-index:70; background:rgba(26,19,14,.42); backdrop-filter:blur(8px); opacity:0; visibility:hidden; transition:.32s; }
-    #detailOverlay.show { opacity:1; visibility:visible; }
-    .detail-panel {
-      --detail-accent:#cb7d2b; --detail-soft:#f7e8cc;
-      position:absolute; top:18px; right:18px; bottom:18px; width:min(1000px,calc(100vw - 36px));
-      padding:34px 38px; border-radius:32px; background:linear-gradient(155deg,#fffdf8,var(--detail-soft));
-      box-shadow:-24px 0 90px rgba(31,20,12,.24); overflow:hidden;
-      transform:translateX(calc(100% + 30px)); transition:transform .48s cubic-bezier(.2,.8,.2,1);
-      display:grid; grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
-      grid-template-rows:auto auto auto minmax(0,1fr) auto;
-      grid-template-areas:"index flow" "title flow" "lead flow" "visual tags" "visual tip";
-      column-gap:30px; row-gap:12px;
-    }
-    .detail-panel.theme-pink { --detail-accent:#d94f79; --detail-soft:#fde8ee; }
-    .detail-panel.theme-blue { --detail-accent:#537fc7; --detail-soft:#e7effd; }
-    .detail-panel.theme-green { --detail-accent:#488a68; --detail-soft:#e4f2e9; }
-    .detail-panel.theme-violet { --detail-accent:#7656bd; --detail-soft:#eee9fb; }
-    .detail-panel.theme-dark { --detail-accent:#f3a44c; --detail-soft:#3b2d24; color:#fff; background:linear-gradient(145deg,#1f1a17,#463326); }
-    #detailOverlay.show .detail-panel { transform:none; }
-    .detail-close { position:absolute; right:24px; top:24px; width:42px; height:42px; border:0; border-radius:50%; background:#f2e4d0; color:var(--ink); font-size:23px; cursor:pointer; transition:.2s; }
-    .detail-close:hover { background:var(--orange); color:#fff; transform:rotate(90deg); }
-    .detail-index { grid-area:index; align-self:start; justify-self:start; display:inline-flex; padding:7px 12px; border-radius:999px; color:var(--detail-accent); background:rgba(255,255,255,.65); font-size:12px; font-weight:800; letter-spacing:.08em; }
-    .detail-panel h3 { grid-area:title; margin:4px 50px 0 0; font-size:clamp(27px,2.2vw,40px); letter-spacing:-.04em; }
-    .detail-lead { grid-area:lead; color:var(--muted); font-size:clamp(14px,1.05vw,17px); line-height:1.65; align-self:start; }
-    .theme-dark .detail-lead { color:rgba(255,255,255,.68); }
-    .detail-flow { margin:24px 0; padding:24px; border-radius:22px; background:#382a20; color:white; }
-    .theme-dark .detail-flow { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
-    .detail-flow-label { color:var(--detail-accent); font-size:12px; font-weight:800; letter-spacing:.1em; }
-    .detail-flow ol { list-style:none; padding:0; margin:18px 0 0; counter-reset:flow; }
-    .detail-flow li { position:relative; padding:0 0 21px 42px; color:rgba(255,255,255,.78); line-height:1.5; counter-increment:flow; }
-    .detail-flow li:last-child { padding-bottom:0; }
-    .detail-flow li::before { content:counter(flow); position:absolute; left:0; top:-2px; width:27px; height:27px; display:grid; place-items:center; border-radius:50%; background:var(--detail-accent); color:#fff; font-size:12px; font-weight:900; }
-    .detail-flow li:not(:last-child)::after { content:""; position:absolute; left:13px; top:28px; width:1px; height:18px; background:rgba(255,255,255,.22); }
-    .flow-board { grid-area:flow; position:relative; min-height:300px; height:100%; margin:0; padding:24px; border-radius:22px; overflow:hidden; align-self:stretch; }
-    .flow-board .flow-title { position:relative; z-index:3; color:var(--detail-accent); font-size:12px; font-weight:900; letter-spacing:.12em; }
-    .flow-items { position:relative; z-index:2; margin-top:18px; }
-    .flow-item { position:relative; font-size:14px; line-height:1.45; }
-    .flow-item b { font-size:11px; }
-
-    .flow-download { background:#26313c; color:white; }
-    .flow-download .flow-items { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:end; height:125px; }
-    .flow-download .flow-item { text-align:center; padding-top:55px; }
-    .flow-download .flow-item::before { content:'↓'; position:absolute; top:2px; left:50%; translate:-50%; width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#f3a44c;font-size:22px;animation:download 1.8s ease infinite;animation-delay:calc(var(--n)*.16s); }
-    .flow-download .flow-item:not(:last-child)::after { content:'›';position:absolute;right:-10px;top:14px;color:#f3a44c;font-size:22px; }
-
-    .flow-oauth { background:radial-gradient(circle at center,#24334d 0 22%,#162033 23% 100%); color:#fff; min-height:260px; }
-    .flow-oauth .flow-title { color:#78a8ff; }
-    .flow-oauth .flow-items { height:185px; margin-top:0; }
-    .flow-oauth .flow-item { position:absolute;width:128px;padding:10px;border-radius:12px;background:#fff;color:#334766;text-align:center;box-shadow:0 8px 20px #0004; }
-    .flow-oauth .flow-item:nth-child(1){left:0;top:70px}.flow-oauth .flow-item:nth-child(2){left:34%;top:8px}.flow-oauth .flow-item:nth-child(3){right:0;top:70px}.flow-oauth .flow-item:nth-child(4){left:34%;bottom:0}
-    .flow-oauth .flow-items::after {content:'G';position:absolute;left:50%;top:50%;translate:-50% -50%;width:55px;height:55px;display:grid;place-items:center;border-radius:50%;background:#5789dc;color:white;font-weight:900;font-size:24px;animation:modelPulse 2s infinite;}
-
-    .flow-setup { background:#e8f3ec; color:#315f48; }
-    .flow-setup .flow-items { display:grid; gap:9px; }
-    .flow-setup .flow-item { padding:11px 14px 11px 46px;background:#fff;border-radius:11px;box-shadow:0 5px 12px #315f4810; }
-    .flow-setup .flow-item::before {content:'✓';position:absolute;left:13px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#58a879;color:#fff;animation:pop 1s both;animation-delay:calc(var(--n)*.2s)}
-
-    .flow-throw { background:linear-gradient(160deg,#feeaf0,#fff); color:#754452; }
-    .flow-throw .flow-items { display:flex; align-items:center; justify-content:space-between; height:130px; }
-    .flow-throw .flow-item { width:21%; padding:48px 5px 8px; text-align:center; }
-    .flow-throw .flow-item::before {content:'📄';position:absolute;top:0;left:50%;translate:-50%;font-size:35px;animation:dateFloat 2.2s ease infinite;animation-delay:calc(var(--n)*-.3s)}
-    .flow-throw .flow-item:last-child::before { content:'🐱'; }
-    .flow-throw .flow-item:not(:last-child)::after {content:'···';position:absolute;right:-24px;top:10px;color:#d94f79;letter-spacing:3px}
-
-    .flow-message { background:#e9f1ff; color:#334766; }
-    .flow-message .flow-items { display:flex; flex-direction:column; gap:9px; }
-    .flow-message .flow-item { max-width:83%; padding:10px 15px;border-radius:16px 16px 16px 4px;background:#fff;box-shadow:0 5px 14px #537fc718;animation:messages 3s ease infinite;animation-delay:calc(var(--n)*.18s)}
-    .flow-message .flow-item:nth-child(even){align-self:flex-end;border-radius:16px 16px 4px 16px;background:#537fc7;color:white}
-
-    .flow-clipboard { background:linear-gradient(135deg,#362a4d,#201a2e); color:#fff; }
-    .flow-clipboard .flow-items { display:grid;grid-template-columns:1fr 80px 1fr;gap:12px;align-items:center;height:130px }
-    .flow-clipboard .flow-item {padding:16px;border:1px solid #ffffff25;border-radius:13px;background:#ffffff0c;text-align:center}
-    .flow-clipboard .flow-item:nth-child(3){grid-column:3}.flow-clipboard .flow-item:nth-child(4){grid-column:1/-1;background:#7656bd}
-    .flow-clipboard .flow-item:nth-child(2){font-size:0;background:transparent;border:0}.flow-clipboard .flow-item:nth-child(2)::after{content:'Ctrl + V';font-size:13px;padding:9px;background:white;color:#7656bd;border-radius:8px;animation:paste 1.6s infinite;display:block}
-
-    .flow-document { background:#fff1db; color:#67451e; }
-    .flow-document .flow-items { height:155px; }
-    .flow-document .flow-item { position:absolute;width:45%;height:68px;padding:13px 15px 13px 48px;border-radius:9px;background:#fff;border-left:5px solid #d2822f;box-shadow:0 8px 18px #92551c1b;transition:.3s; }
-    .flow-document .flow-item::before{content:'▤';position:absolute;left:14px;font-size:22px;color:#d2822f}.flow-document .flow-item:nth-child(1){left:0;top:0;transform:rotate(-2deg)}.flow-document .flow-item:nth-child(2){left:12%;top:72px;transform:rotate(2deg)}.flow-document .flow-item:nth-child(3){right:8%;top:2px;transform:rotate(3deg)}.flow-document .flow-item:nth-child(4){right:0;top:82px;background:#d2822f;color:white}
-
-    .flow-mic { background:#341f29; color:#fff; }
-    .flow-mic .flow-items { display:grid;grid-template-columns:75px 1fr;gap:20px;align-items:center;height:130px }
-    .flow-mic .flow-items::before{content:'🎙';width:70px;height:70px;display:grid;place-items:center;background:#d94f79;border-radius:50%;font-size:32px;animation:mic 1s infinite}
-    .flow-mic .flow-item {grid-column:2;padding:3px 0 3px 20px;border-left:calc(3px + var(--n)*2px) solid #ef6d8e}
-
-    .flow-mask { background:#171413;color:white;border:1px solid #ffffff18 }
-    .flow-mask .flow-items { display:grid;grid-template-columns:1fr 38px 1fr;gap:8px;align-items:center }
-    .flow-mask .flow-item {padding:14px;background:#ffffff0b;border-radius:10px}.flow-mask .flow-item:nth-child(2){font-size:0;background:transparent}.flow-mask .flow-item:nth-child(2)::after{content:'→';font-size:26px;color:#f3a44c}.flow-mask .flow-item:nth-child(3){grid-column:3;background:#f3a44c;color:#171413}.flow-mask .flow-item:nth-child(4){grid-column:1/-1;text-align:center;border:1px dashed #f3a44c;color:#f3a44c}
-
-    .flow-context { background:#eee9fb;color:#4e397d }
-    .flow-context .flow-items { display:flex;flex-wrap:wrap;gap:10px;align-content:center;height:130px }
-    .flow-context .flow-item {padding:10px 15px;border-radius:999px;background:white;border:2px solid transparent;animation:scan 2.4s ease infinite;animation-delay:calc(var(--n)*-.3s)}.flow-context .flow-item:nth-child(even){border-color:#7656bd;font-weight:800}
-
-    .flow-extract { background:linear-gradient(#fff3e3,#f2d2aa);color:#63451f }
-    .flow-extract .flow-items { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:60px }
-    .flow-extract .flow-item {padding:10px;background:white;border-radius:9px;text-align:center}.flow-extract .flow-item:last-child{position:absolute;bottom:0;left:30%;right:30%;background:#cb7d2b;color:white}.flow-extract .flow-items::after{content:'▼';position:absolute;bottom:37px;left:50%;translate:-50%;color:#cb7d2b;font-size:24px;animation:blink 1s infinite}
-
-    .flow-classify { background:#17263e;color:white }
-    .flow-classify .flow-items { display:grid;grid-template-columns:1fr 1fr;gap:10px }
-    .flow-classify .flow-item {padding:14px;border-radius:10px;background:#ffffff12;border-top:4px solid #537fc7}.flow-classify .flow-item:nth-child(1){grid-column:1/-1;text-align:center;border-color:#fff}.flow-classify .flow-item:nth-child(2){border-color:#ef6d8e}.flow-classify .flow-item:nth-child(3){border-color:#72aa8a}.flow-classify .flow-item:nth-child(4){grid-column:1/-1;border-color:#f3a44c;text-align:center}
-
-    .flow-verify { background:#e5f3ea;color:#315f48 }
-    .flow-verify .flow-items {display:grid;grid-template-columns:1fr 1fr;gap:12px}.flow-verify .flow-item{padding:15px 15px 15px 43px;background:white;border-radius:12px;box-shadow:0 5px 12px #315f4812}.flow-verify .flow-item::before{content:'✓';position:absolute;left:14px;color:#4c9b6d;font-weight:900}.flow-verify::after{content:'검증 완료';position:absolute;right:20px;top:18px;padding:8px 13px;border:3px solid #4c9b6d;color:#4c9b6d;border-radius:7px;font-weight:900;transform:rotate(-7deg);animation:pop 1.8s ease infinite}
-
-    .flow-calendar { background:#edf3ff;color:#334766 }
-    .flow-calendar .flow-items {display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#b8cae8;border:1px solid #b8cae8;border-radius:12px;overflow:hidden}.flow-calendar .flow-item{min-height:100px;padding:34px 8px 8px;background:white;text-align:center}.flow-calendar .flow-item::before{content:attr(data-day);position:absolute;top:8px;left:8px;color:#537fc7;font-weight:900}.flow-calendar .flow-item:last-child{background:#537fc7;color:white;animation:calendar 2.8s ease infinite}
-
-    .flow-tasks { background:#e7f3eb;color:#315f48 }
-    .flow-tasks .flow-items {display:grid;gap:8px}.flow-tasks .flow-item{padding:11px 15px 11px 48px;background:white;border-radius:9px}.flow-tasks .flow-item::before{content:'';position:absolute;left:14px;width:20px;height:20px;border:2px solid #58a879;border-radius:5px}.flow-tasks .flow-item:nth-child(-n+3)::after{content:'✓';position:absolute;left:17px;top:8px;color:#58a879;font-weight:900;animation:pop 1s both;animation-delay:calc(var(--n)*.25s)}
-
-    .flow-role { background:#f0ebfb;color:#4e397d }
-    .flow-role .flow-items {display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.flow-role .flow-item{padding:18px;text-align:center;border-radius:50px;background:white;border:2px solid #d9cdf4}.flow-role .flow-item:last-child{grid-column:1/-1;background:#7656bd;color:white;animation:role 2.2s infinite}
-
-    .flow-clock { background:#2f241c;color:white }
-    .flow-clock .flow-items {display:flex;justify-content:space-around;align-items:center;height:135px}.flow-clock .flow-item{width:84px;height:84px;padding:30px 5px 0;border-radius:50%;background:#ffffff0e;border:2px solid #f3a44c;text-align:center}.flow-clock .flow-item::before{content:'';position:absolute;left:50%;top:10px;width:2px;height:28px;background:#f3a44c;transform-origin:bottom;animation:hand calc(1.3s + var(--n)*.25s) linear infinite}.flow-clock .flow-item:not(:last-child)::after{content:'›';position:absolute;right:-23px;top:27px;color:#f3a44c;font-size:24px}
-
-    .flow-date { background:#fdebf0;color:#754452 }
-    .flow-date .flow-items {display:flex;gap:0;align-items:center;height:130px}.flow-date .flow-item{flex:1;padding:52px 5px 10px;text-align:center;border-top:3px solid #d94f79}.flow-date .flow-item::before{content:attr(data-day);position:absolute;left:50%;top:-15px;translate:-50%;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:white;border:3px solid #d94f79;color:#d94f79;font-weight:900}.flow-date .flow-item:last-child::before{background:#d94f79;color:white;animation:modelPulse 2s infinite}
-
-    .flow-models { background:radial-gradient(circle at center,#263b60,#131d30);color:white;min-height:250px }
-    .flow-models .flow-items {height:175px}.flow-models .flow-item{position:absolute;width:115px;padding:12px;text-align:center;border-radius:14px;background:#ffffff13;border:1px solid #ffffff25}.flow-models .flow-item:nth-child(1){left:38%;top:60px;background:#537fc7}.flow-models .flow-item:nth-child(2){left:0;top:5px}.flow-models .flow-item:nth-child(3){right:0;top:5px}.flow-models .flow-item:nth-child(4){right:5%;bottom:0}.flow-models .flow-items::before,.flow-models .flow-items::after{content:'';position:absolute;left:20%;right:20%;top:50%;height:1px;background:#78a8ff;transform:rotate(18deg);animation:blink 1s infinite}.flow-models .flow-items::after{transform:rotate(-18deg)}
-
-    .flow-open { background:#181614;color:#eee;font-family:ui-monospace,monospace }
-    .flow-open .flow-items {display:grid;gap:8px;padding-left:30px}.flow-open .flow-item{padding:8px 12px;background:#ffffff08;border-left:2px solid #f3a44c}.flow-open .flow-item::before{content:'├─';position:absolute;left:-29px;color:#f3a44c}.flow-open .flow-item:last-child::before{content:'└─'}.flow-open .flow-item:nth-child(2){margin-left:22px}.flow-open .flow-item:nth-child(3){margin-left:44px}.flow-open .flow-item:nth-child(4){margin-left:66px;color:#f3a44c;animation:blink 1.4s infinite}
-    .detail-tags { grid-area:tags; display:flex; flex-wrap:wrap; gap:8px; align-self:end; }
-    .detail-tags span { padding:8px 12px; border-radius:10px; background:rgba(255,255,255,.72); border:1px solid color-mix(in srgb,var(--detail-accent) 25%,transparent); color:var(--detail-accent); font-size:13px; font-weight:700; }
-    .detail-tip { grid-area:tip; display:flex; gap:12px; margin-top:0; padding:15px 17px; border-radius:16px; background:color-mix(in srgb,var(--detail-accent) 11%,transparent); color:var(--detail-accent); line-height:1.45; font-size:14px; font-weight:600; align-self:end; }
-    .detail-tip strong { display:block; margin-bottom:3px; font-size:11px; letter-spacing:.05em; }
-    .detail-tip #detailTip { display:block; color:var(--ink); font-weight:600; }
-    .theme-dark .detail-tip #detailTip { color:rgba(255,255,255,.82); }
-
-    /* Every detail gets its own living mini-scene */
-    .detail-visual { grid-area:visual; height:100%; min-height:190px; margin:0; border-radius:24px; position:relative; overflow:hidden; background:color-mix(in srgb,var(--detail-accent) 12%,white); border:1px solid color-mix(in srgb,var(--detail-accent) 20%,transparent); }
-    .theme-dark .detail-visual { background:rgba(255,255,255,.06); }
-    .detail-visual span { position:absolute; display:grid; place-items:center; }
-    .detail-visual .v-main { left:50%; top:50%; width:82px; height:82px; margin:-41px; border-radius:22px; background:var(--detail-accent); color:white; font-weight:900; font-size:24px; box-shadow:0 16px 30px color-mix(in srgb,var(--detail-accent) 28%,transparent); z-index:3; }
-    .detail-visual .v-a,.detail-visual .v-b,.detail-visual .v-c { width:48px; height:48px; border-radius:15px; background:white; color:var(--detail-accent); font-size:23px; box-shadow:0 9px 20px #0001; }
-    .detail-visual .v-a { left:11%; top:22%; } .detail-visual .v-b { right:12%; top:18%; } .detail-visual .v-c { right:20%; bottom:12%; }
-    .detail-visual .v-line { left:16%; right:16%; top:50%; height:3px; background:repeating-linear-gradient(90deg,var(--detail-accent) 0 8px,transparent 8px 15px); animation:lineMove 1.2s linear infinite; }
-    @keyframes lineMove { to{background-position:30px 0} }
-    .example-scene { padding:18px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
-    .example-scene .example-label { position:static; display:block; color:var(--detail-accent); font-size:11px; font-weight:900; letter-spacing:.08em; }
-    .example-scene .example-card { position:relative; inset:auto; display:block; width:100%; height:auto; padding:13px 15px; border-radius:13px; background:rgba(255,255,255,.82); color:var(--ink); font-size:13px; line-height:1.5; box-shadow:0 7px 18px #0000000c; }
-    .example-scene .example-card small { display:block; margin-bottom:3px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; }
-    .example-scene .example-arrow { position:static; display:block; height:auto; color:var(--detail-accent); text-align:center; font-size:21px; line-height:1; animation:exampleArrow 1.5s ease-in-out infinite; }
-    .example-scene .example-card.result { border-left:5px solid var(--detail-accent); font-weight:700; animation:resultGlow 2.6s ease-in-out infinite; }
-    .theme-dark .example-scene .example-card { background:rgba(255,255,255,.09); color:#fff; }
-    .theme-dark .example-scene .example-card small { color:rgba(255,255,255,.52); }
-    @keyframes exampleArrow { 50% { transform:translateY(4px); opacity:.45; } }
-    @keyframes resultGlow { 50% { box-shadow:0 8px 24px color-mix(in srgb,var(--detail-accent) 22%,transparent); transform:translateY(-2px); } }
-    .kind-download .v-main { animation:download 1.8s cubic-bezier(.3,.8,.3,1) infinite; }
-    @keyframes download { 0%,20%{transform:translateY(-45px);opacity:0} 55%{transform:translateY(5px);opacity:1} 70%{transform:translateY(-5px)} 100%{transform:none} }
-    .kind-oauth .v-a,.kind-oauth .v-b,.kind-oauth .v-c { animation:orbit 4s linear infinite; transform-origin:245px 68px; }
-    .kind-oauth .v-b{animation-delay:-1.3s}.kind-oauth .v-c{animation-delay:-2.6s}
-    @keyframes orbit { to{transform:rotate(360deg)} }
-    .kind-setup .v-main { border-radius:50%; background:conic-gradient(var(--detail-accent) 0 86%,#fff 86%); animation:spin 2.5s ease-in-out infinite; }
-    .kind-setup .v-main::after { content:'60s'; width:58px;height:58px;border-radius:50%;background:#fff;color:var(--detail-accent);display:grid;place-items:center; }
-    @keyframes spin{50%{transform:rotate(360deg) scale(1.08)}100%{transform:rotate(720deg)}}
-    .kind-throw .v-a { animation:throw 2.2s ease-in-out infinite; }
-    @keyframes throw{0%{transform:translate(-40px,35px) rotate(-15deg)}55%,75%{transform:translate(190px,20px) rotate(15deg);opacity:1}100%{transform:translate(210px,45px) scale(.3);opacity:0}}
-    .kind-message .v-a,.kind-message .v-b,.kind-message .v-c { width:140px;height:35px;border-radius:18px;font-size:12px; animation:messages 2.6s ease infinite; }
-    .kind-message .v-b{animation-delay:.3s}.kind-message .v-c{animation-delay:.6s}
-    @keyframes messages{0%{transform:translateX(-70px);opacity:0}30%,75%{transform:none;opacity:1}100%{transform:translateX(60px);opacity:0}}
-    .kind-clipboard .v-main { animation:paste 1.7s ease-in-out infinite; }
-    @keyframes paste{0%,25%{transform:scale(.8);opacity:.5}55%{transform:scale(1.16)}75%,100%{transform:scale(1)}}
-    .kind-document .v-a,.kind-document .v-b,.kind-document .v-c { animation:pages 2.4s ease-in-out infinite; }
-    .kind-document .v-b{animation-delay:.35s}.kind-document .v-c{animation-delay:.7s}
-    @keyframes pages{50%{transform:translate(90px,25px) rotate(12deg)}}
-    .kind-mic .v-main { border-radius:50%; animation:mic 1s ease-in-out infinite; }
-    .kind-mic .v-line { height:40px;background:repeating-linear-gradient(90deg,var(--detail-accent) 0 3px,transparent 3px 9px);animation:wave .7s ease-in-out infinite; }
-    @keyframes mic{50%{box-shadow:0 0 0 18px color-mix(in srgb,var(--detail-accent) 12%,transparent)}} @keyframes wave{50%{transform:scaleY(.35)}}
-    .kind-mask .v-a,.kind-mask .v-b,.kind-mask .v-c { width:110px;height:24px;border-radius:4px;animation:mask 2.2s steps(1) infinite; }
-    @keyframes mask{0%,35%{color:#5a4b40;background:#fff}36%,100%{color:transparent;background:#29231f}}
-    .kind-context .v-a,.kind-context .v-b,.kind-context .v-c { animation:scan 2.4s ease-in-out infinite; }
-    @keyframes scan{50%{filter:hue-rotate(130deg);transform:translateY(28px)}}
-    .kind-extract .v-a,.kind-extract .v-b,.kind-extract .v-c { animation:funnel 2.2s ease-in-out infinite; }
-    @keyframes funnel{70%,100%{left:calc(50% - 20px);top:calc(50% - 20px);transform:scale(.4);opacity:.4}}
-    .kind-classify .v-a,.kind-classify .v-b,.kind-classify .v-c { animation:classify 2.4s ease-in-out infinite; }
-    .kind-classify .v-a{--x:-90px;--y:45px}.kind-classify .v-b{--x:90px;--y:-45px}.kind-classify .v-c{--x:90px;--y:45px}
-    @keyframes classify{50%,100%{transform:translate(var(--x),var(--y))}}
-    .kind-verify .v-main { animation:check 1.8s ease-in-out infinite; }
-    @keyframes check{0%,25%{clip-path:inset(0 100% 0 0)}65%,100%{clip-path:inset(0)}}
-    .kind-calendar .v-main { width:120px;height:110px;margin:-55px -60px;animation:calendar 2.6s ease infinite; }
-    @keyframes calendar{40%{transform:rotateY(180deg)}80%,100%{transform:rotateY(360deg)}}
-    .kind-tasks .v-a,.kind-tasks .v-b,.kind-tasks .v-c { width:160px;height:30px;border-radius:7px;animation:taskDone 2.7s ease infinite; }
-    @keyframes taskDone{55%,100%{transform:translateX(35px);background:#dff2e7;text-decoration:line-through}}
-    .kind-role .v-a,.kind-role .v-b,.kind-role .v-c { border-radius:50%;animation:role 2.5s ease infinite; }
-    @keyframes role{50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--detail-accent) 15%,transparent);transform:scale(1.12)}}
-    .kind-clock .v-main { border-radius:50%; }
-    .kind-clock .v-main::after {content:'';width:3px;height:30px;background:white;position:absolute;bottom:41px;transform-origin:bottom;animation:hand 2s linear infinite}
-    @keyframes hand{to{transform:rotate(360deg)}}
-    .kind-date .v-a,.kind-date .v-b,.kind-date .v-c { animation:dateFloat 3s ease-in-out infinite; }
-    .kind-date .v-b{animation-delay:-1s}.kind-date .v-c{animation-delay:-2s}@keyframes dateFloat{50%{transform:translateY(-20px) rotate(8deg)}}
-    .kind-models .v-a,.kind-models .v-b,.kind-models .v-c { animation:modelPulse 2s ease-in-out infinite; }.kind-models .v-b{animation-delay:.4s}.kind-models .v-c{animation-delay:.8s}@keyframes modelPulse{50%{transform:scale(1.25);background:var(--detail-accent);color:white}}
-    .kind-open .v-line { top:35%;height:30%;background:linear-gradient(90deg,transparent 0 20%,var(--detail-accent) 20% 21%,transparent 21% 49%,var(--detail-accent) 49% 50%,transparent 50%);animation:growTree 2s ease infinite;transform-origin:bottom; }
-    @keyframes growTree{0%{transform:scaleY(0)}50%,100%{transform:scaleY(1)}}
-    .layout-wide { width:min(1060px,calc(100vw - 36px)); grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); }
-    .layout-compact { width:min(930px,calc(100vw - 36px)); grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
-    .layout-cinematic { width:min(1100px,calc(100vw - 36px)); grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); }
-    .layout-cinematic .detail-visual { border-radius:32px 8px 32px 8px; }
-    .ripple { position:fixed; z-index:100; width:16px; height:16px; border:2px solid rgba(203,125,43,.65); border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); animation:ripple .7s ease-out forwards; }
-    @keyframes ripple { to { width:150px; height:150px; opacity:0; border-width:0; } }
-    #fx { position:fixed; inset:0; z-index:90; pointer-events:none; }
-    .overview #deck { overflow:auto; padding:30px; display:grid; grid-template-columns:repeat(3,1fr); gap:22px; background:#201913; }
-    .overview .slide { position:relative; opacity:1; visibility:visible; transform:none!important; width:100%; aspect-ratio:16/9; height:auto; padding:28px; zoom:.33; border-radius:18px; cursor:pointer; box-shadow:0 8px 24px #0006; }
-    .overview .slide:hover { outline:10px solid var(--orange); }
-    .overview #nav, .overview #helpBtn, .overview #counter, .overview #progress { display:none; }
-
-    @media (max-width: 900px), (max-height: 650px) {
-      .slide { padding:38px 44px; }
-      .standard { gap:20px; }
-      .card { --radius:18px; }
-      .feature-grid, .context-grid { gap:12px; }
-      .feature, .context { padding:16px; }
-      .steps .step { min-height:250px; padding:22px; }
-      .status { margin-top:7px; padding:7px 12px; grid-template-columns:48px 1fr 1fr; }
-      .status img { width:48px; height:48px; }
-    }
-    @media (max-width: 700px) {
-      .slide { padding:58px 24px 70px; overflow:auto; }
-      .cover-wrap, .google-grid, .widget-grid, .choice-layout, .privacy { grid-template-columns:1fr; }
-      .cover-cat, .choice-cat, .pipeline { display:none; }
-      .stats, .insights, .feature-grid, .steps, .context-grid { grid-template-columns:1fr; }
-      .routes { grid-template-columns:1fr; }
-      .routes .arrow { display:none; }
-      .problem-grid { grid-template-columns:1fr; }
-      .slide { height:100%; }
-      .overview #deck { grid-template-columns:1fr; }
-      .detail-panel { top:auto; left:10px; right:10px; bottom:10px; width:auto; max-height:82vh; padding:30px 24px; transform:translateY(calc(100% + 20px)); }
-    }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+    @media(max-height:650px){.slide{padding-top:18px;padding-bottom:16px}.feature-head{margin-bottom:10px}.route{min-height:185px}.cat-stage{height:52vh}.lead{font-size:16px}.footer{font-size:10px}}
+    @media(prefers-reduced-motion:reduce){.slide,.progress,.cat-stage{transition:none}.slide.active *,.slide.active *::before,.slide.active *::after{animation:none!important}}
   </style>
 </head>
 <body>
-  <main id="deck" aria-live="polite">
-    <section class="slide cover active" data-title="CatMoa">
-      <div class="cover-wrap">
-        <div class="cover-copy">
-          <div class="eyebrow reveal" style="--i:0">교사를 위한 일정 수집 도구</div>
-          <h1 class="reveal" style="--i:1">업무는 던지고,<br><span>시간은 되찾고.</span></h1>
-          <p class="sub reveal" style="--i:2">흩어진 일정과 할 일을 한곳으로 모으는 가장 귀여운 방법</p>
-          <div class="meta reveal" style="--i:3"><span>macOS · Windows · Linux</span><span>무료 · 오픈소스 MIT</span><span>교사 해커톤 프로젝트</span></div>
+<main class="deck" id="deck" aria-live="polite">
+
+  <section class="slide active" data-title="표지">
+    <div class="kicker"><span class="pill">Teacher’s workflow tool</span></div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="stack">
+          <h1 class="hero-title"><span class="tiny">교사를 위한 일정 수집 도구</span>Cat<span class="moa">Moa</span></h1>
+          <p class="lead">흩어진 업무를 던지면,<br>고양이가 일정과 할 일을 모읍니다.</p>
+          <div class="tag-row"><span class="tag">macOS · Windows · Linux</span><span class="tag">무료 · 오픈소스 MIT</span><span class="tag">교사 해커톤 프로젝트</span></div>
         </div>
-        <img class="cover-cat reveal" style="--i:2" src="assets/image1.png" alt="CatMoa 고양이 캐릭터" />
+        <div class="cat-stage"><img class="cat" src="assets/image1.png" alt="CatMoa 고양이 캐릭터"></div>
       </div>
-      <div class="click-hint">CLICK OR PRESS →</div>
-    </section>
+    </div>
+    <div class="footer"><span class="brand"><i class="brand-dot"></i>CatMoa</span><span>01 / 17</span></div>
+  </section>
 
-    <section class="slide standard" data-title="사전 인터뷰">
-      <header class="headline reveal" style="--i:0"><span class="pill">사전 인터뷰</span><h2>현장 교사에게 먼저 물었습니다</h2><p class="sub">교사 7명 대상 · 업무 전달 경로와 기록 방식, 놓친 경험을 조사</p></header>
-      <div class="stats">
-        <article class="stat card accent-card reveal" style="--i:1"><strong data-count="85" data-suffix="%">0%</strong><p>일정이나 업무를 놓친 경험이 있다고 응답</p></article>
-        <article class="stat card reveal" style="--i:2"><strong data-count="3.4" data-suffix="점">0점</strong><p>현재 관리 방식 만족도 (5점 만점)</p></article>
-        <article class="stat card reveal" style="--i:3"><strong data-count="4" data-suffix="가지+">0가지</strong><p>메신저 · 공문 · 단톡방 · 구두 등 전달 경로</p></article>
-        <div class="insights reveal" style="--i:4">
-          <div class="insight"><span class="dot"></span><div><h3>전달 경로가 흩어져 있다</h3><p>정형·비정형 경로가 뒤섞여 들어옵니다.</p></div></div>
-          <div class="insight"><span class="dot"></span><div><h3>기록은 결국 사람 손에</h3><p>옮겨 적는 일도, 기억하는 일도 수동입니다.</p></div></div>
-          <div class="insight"><span class="dot"></span><div><h3>놓치면 곧바로 급해진다</h3><p>늦은 확인은 늘 급한 처리로 돌아옵니다.</p></div></div>
-        </div>
-        <div class="quote reveal" style="--i:5">도구가 없어서가 아니라, 경로가 흩어져 있고 기록이 사람 손에 달려 있었습니다.</div>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="문제 정의">
-      <header class="headline reveal" style="--i:0"><span class="eyebrow">Problem → Insight → Reframe</span><h2>문제를 다시 정의했습니다</h2><p class="sub">자동 수집이라는 기능보다 중요한 것은, 모든 경로를 놓치지 않는 경험</p></header>
-      <div class="problem-grid">
-        <article class="problem-card card reveal" style="--i:1"><span class="label">처음에 생각한 문제</span><p>메신저와 공문에서 일정을 <span class="highlight">자동 수집</span>하는 기능의 부재</p></article>
-        <article class="problem-card problem-mid card reveal" style="--i:2"><div class="orbit">↻</div><strong>교사는<br>기능보다 흐름이<br>필요했습니다</strong></article>
-        <article class="problem-card card reveal" style="--i:3"><span class="label">그래서 재정의한 문제</span><p><span class="highlight">다양한 경로</span>로 전달된 일정을 편리하게 수집하고 정리하기</p></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="쉬운 시작">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">01</span><div><h2>설치와 Google 연동이 아주 쉬움</h2><p class="sub">내려받기에서 실행까지, 그리고 연동까지 단순하게</p></div></div></header>
-      <div class="feature-grid">
-        <article class="feature card reveal" style="--i:1"><div class="icon">↧</div><div><h3>내려받아 더블클릭</h3><p>실행 파일 하나로 끝. Python 설치나 서버 구축이 필요 없습니다.</p></div></article>
-        <article class="feature card reveal" style="--i:2"><div class="icon">G</div><div><h3>JSON 키 없는 Google 로그인</h3><p>브라우저 로그인 한 번으로 Calendar · Tasks 연결</p></div></article>
-        <article class="feature card reveal" style="--i:3"><div class="icon">⚡</div><div><h3>첫 설정 약 1분</h3><p>LLM과 API 키 선택 → 연결 테스트 → Google 로그인</p></div></article>
-        <article class="feature card reveal" style="--i:4"><div class="icon">🐾</div><div><h3>배울 것이 없는 사용법</h3><p>화면 위 고양이에게 자료를 던지기만 하면 됩니다.</p></div></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="네 가지 입력">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">02</span><div><h2>쉽고 직관적인 네 가지 입력 방식</h2><p class="sub">자료의 형태와 출처를 가리지 않는 업무 수집</p></div></div></header>
-      <div class="routes">
-        <article class="route card reveal" style="--i:1"><span class="badge">1</span><div><h3>쿨메신저 새 쪽지</h3><p>학교 업무 메신저 전달사항</p></div></article><div class="arrow reveal" style="--i:2">→</div><article class="route output card reveal" style="--i:2"><div><h3>자동으로 가져오기</h3><p>새 쪽지를 주기적으로 확인해 후보로 제시</p></div></article>
-        <article class="route card reveal" style="--i:2"><span class="badge" style="background:#f6dde4">2</span><div><h3>단체 채팅방 · 메모</h3><p>단톡방 공지, 메모 앱 내용</p></div></article><div class="arrow reveal" style="--i:3">→</div><article class="route output card reveal" style="--i:3"><div><h3>복사 · 붙여넣기</h3><p>내용을 복사해 고양이 위에서 Ctrl+V 한 번</p></div></article>
-        <article class="route card reveal" style="--i:3"><span class="badge" style="background:#dcebe1">3</span><div><h3>에듀파인 공문 · 안내문</h3><p>한글·PDF 파일, 화면 캡처</p></div></article><div class="arrow reveal" style="--i:4">→</div><article class="route output card reveal" style="--i:4"><div><h3>드래그 앤 드롭 · 캡처</h3><p>파일을 끌어다 놓거나 캡처해서 붙여넣기</p></div></article>
-        <article class="route card reveal" style="--i:4"><span class="badge" style="background:#dfe7f7">4</span><div><h3>회의 · 구두 전달</h3><p>문득 떠오른 일정, 이동 중 메모</p></div></article><div class="arrow reveal" style="--i:5">→</div><article class="route output card reveal" style="--i:5"><div><h3>휴대폰 음성 입력</h3><p>Google Tasks 인박스에 남기면 불러와 정리</p></div></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="개인정보 보호">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">03</span><div><h2>개인정보는 외부로 나가기 전, 로컬에서 차단</h2><p class="sub">규칙 기반 + 경량 토큰 분류 모델의 2단 로컬 비식별화</p></div></div></header>
-      <div class="privacy">
-        <div class="privacy-cards">
-          <article class="privacy-card card reveal" style="--i:1"><h3><span class="icon">#</span> 규칙 기반 탐지</h3><p>주민등록번호 · 전화번호처럼 형식이 분명한 식별자를 로컬에서 즉시 마스킹</p></article>
-          <article class="privacy-card card reveal" style="--i:2"><h3><span class="icon">AI</span> 경량 토큰 분류 모델</h3><p>이름 · 학교명처럼 문맥 판단이 필요한 정보를 로컬 모델로 탐지</p></article>
-        </div>
-        <article class="pipeline card reveal" style="--i:3"><span class="eyebrow">LOCAL PRIVACY PIPELINE</span><div class="pipe"><div class="node">원문<br>📄</div><span class="pipe-arrow">›</span><div class="node">로컬 탐지<br>🔎</div><span class="pipe-arrow">›</span><div class="node">마스킹<br>▓▓</div><span class="pipe-arrow">›</span><div class="node">AI 분석<br>✨</div></div><small>개인정보는 이 경계 밖으로 나가지 않습니다</small></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="단계별 AI">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">04</span><div><h2>단계별 하네스로 성능을 끌어올림</h2><p class="sub">한 번에 다 시키지 않고, 좁은 판단으로 쪼갭니다</p></div></div></header>
-      <div class="steps">
-        <article class="step card reveal" style="--i:1"><span class="step-no">STEP 01</span><h3>추출</h3><p>입력에서 기록해야 할 일정이나 업무만 꺼냅니다.</p><div class="benefit">→ 정보의 핵심만 선명하게</div></article>
-        <article class="step card reveal" style="--i:2"><span class="step-no">STEP 02</span><h3>판단 · 분류</h3><p>나의 업무인지 판단하고, 일정/할 일과 상대 날짜를 해석합니다.</p><div class="benefit">→ 모델 혼동은 더 작게</div></article>
-        <article class="step card reveal" style="--i:3"><span class="step-no">STEP 03</span><h3>검증</h3><p>형식을 규칙 기반 검증기가 확인하고, 최종적으로 사람이 검토합니다.</p><div class="benefit">→ 출력은 더 안정적으로</div></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="Google 활용">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">06</span><div><h2>새 서비스를 만들지 않고 Google을 활용</h2><p class="sub">AI는 정리하고, 관리는 검증된 도구에 맡깁니다</p></div></div></header>
-      <div class="google-grid">
-        <div class="destinations">
-          <article class="destination card reveal" style="--i:1"><span class="big-icon">📅</span><span class="pill">일정</span><h3>Google Calendar</h3></article>
-          <article class="destination card reveal" style="--i:2"><span class="big-icon">✓</span><span class="pill">해야 할 일</span><h3>Google Tasks</h3></article>
-        </div>
-        <div class="benefit-list">
-          <article class="benefit-row card reveal" style="--i:2"><span class="dot"></span><div><h3>기존 동기화 그대로</h3><p>모바일·PC 간 Google 동기화를 그대로 활용</p></div></article>
-          <article class="benefit-row card reveal" style="--i:3"><span class="dot"></span><div><h3>안정화된 기능 사용</h3><p>알림, 반복 일정, 완료 처리를 그대로 이용</p></div></article>
-          <article class="benefit-row card reveal" style="--i:4"><span class="dot"></span><div><h3>별도 일정 DB 없음</h3><p>사용자의 Google 계정에만 데이터 저장</p></div></article>
-          <article class="benefit-row card reveal" style="--i:5"><span class="dot"></span><div><h3>언제든 확인 가능</h3><p>CatMoa를 켜지 않아도 Google에서 확인</p></div></article>
+  <section class="slide dark" data-title="끝나지 않은 업무">
+    <div class="kicker">The problem · 14:20</div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="stack"><h2>수업은 끝났지만,<br><span class="accent">선생님의 업무는<br>끝나지 않았습니다.</span></h2><p class="lead">자리에 앉는 순간, 서로 다른 곳에서<br>마감과 요청이 쏟아집니다.</p></div>
+        <div class="inbox">
+          <div class="notice"><div class="icon">💬</div><div><strong>15:00</strong><span>가정통신문 취합 · 메신저</span></div></div>
+          <div class="notice hot"><div class="icon">📄</div><div><strong>내일 16:30</strong><span>업무 기안 요청 · 공문</span></div></div>
+          <div class="notice"><div class="icon">🗣️</div><div><strong>내일 2:30</strong><span>전교직원 회의 · 구두 전달</span></div></div>
+          <div class="notice hot"><div class="icon">🔔</div><div><strong>방금</strong><span>새로운 전달사항이 도착했습니다</span></div></div>
         </div>
       </div>
-    </section>
+    </div>
+    <div class="footer"><span>하나를 처리하면, 또 하나가 도착합니다.</span><span>02 / 17</span></div>
+  </section>
 
-    <section class="slide standard" data-title="고양이 위젯">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">05</span><div><h2>화면 한구석의 고양이, 개입은 최소로</h2><p class="sub">프로그램을 여는 순간 자체를 없앤 인터페이스</p></div></div></header>
-      <div class="widget-grid">
-        <div class="bullets">
-          <div class="bullet reveal" style="--i:1"><span class="dot"></span><div><h3>항상 곁에 있는 작은 위젯</h3><p>창을 열고 닫는 과정 없이, 던지면 바로 처리</p></div></div>
-          <div class="bullet reveal" style="--i:2"><span class="dot"></span><div><h3>표정으로 알리는 상태</h3><p>대기 · 서류 찾는 중 · 분석 중 · 완료를 한눈에</p></div></div>
-          <div class="bullet reveal" style="--i:3"><span class="dot"></span><div><h3>방해하지 않는 존재감</h3><p>크기 조절, 트레이 숨기기, 작업표시줄 미점유</p></div></div>
-          <div class="bullet reveal" style="--i:4"><span class="dot"></span><div><h3>연달아 넣어도 순서대로</h3><p>여러 자료를 통합 큐에서 차례로 처리</p></div></div>
+  <section class="slide" data-title="흩어진 전달 경로">
+    <div class="kicker">The real problem</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><h2>문제는 일정의 양보다,<br><span class="marker">들어오는 길이 흩어져 있다는 것</span></h2><p class="lead">같은 오후, 네 번의 전달. 기록하고 옮겨 적는 일은 모두 선생님의 몫입니다.</p><div class="timeline"><div class="event"><time>13:10</time><div class="source">쿨메신저</div><p>학년 협의 일정</p></div><div class="event"><time>13:27</time><div class="source">에듀파인 공문</div><p>제출 마감</p></div><div class="event"><time>14:05</time><div class="source">단체 채팅방</div><p>준비물 안내</p></div><div class="event"><time>16:10</time><div class="source">회의 · 구두</div><p>학생 상담 요청</p></div></div></div></div>
+    <div class="footer"><span>기억하고 → 옮겨 적고 → 다시 확인하고</span><span>03 / 17</span></div>
+  </section>
+
+  <section class="slide sunny" data-title="고양이라는 발상">
+    <div class="kicker">A tiny idea</div>
+    <div class="slide-body"><div class="split"><div class="stack"><p class="lead" style="color:var(--ink);font-weight:800">여기서 발상을 바꿨습니다.</p><h2>그래서 컴퓨터에<br><span class="accent">고양이를 한 마리</span><br>키웠습니다.</h2><p class="lead" style="color:rgba(16,18,24,.65)">흩어진 자료를 고양이에게 던지면<br>일정과 할 일을 대신 찾아 정리합니다.</p><div class="flowline"><span>자료를 던진다</span><span class="arrow">→</span><span>고양이가 모은다</span><span class="arrow">→</span><span>캘린더에 들어간다</span></div></div><div class="cat-stage"><img class="cat" src="assets/image2.png" alt="문서를 정리하는 CatMoa"></div></div></div>
+    <div class="footer"><span class="brand"><i class="brand-dot"></i>CatMoa</span><span>04 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="사전 인터뷰">
+    <div class="kicker"><span class="pill">사전 인터뷰</span> 현장 교사에게 먼저 물었습니다</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="metrics"><div class="metric"><b>85%</b><p>일정이나 업무를<br>놓친 경험이 있다</p></div><div class="metric"><b>3.4</b><p>현재 관리 방식 만족도<br>5점 만점</p></div><div class="metric"><b>4+</b><p>메신저·공문·단톡방·구두<br>일정 전달 경로</p></div></div><div class="insights"><div class="insight"><h3>전달 경로가 흩어져 있다</h3><p>정형화된 메신저와 공문 외에도 단톡방, 회의, 구두 전달이 많습니다.</p></div><div class="insight"><h3>기록은 사람 손에 달려 있다</h3><p>수첩과 앱을 병행하지만 결국 일일이 옮겨 적어야 합니다.</p></div><div class="insight"><h3>놓치면 곧바로 급해진다</h3><p>늦게 확인한 마감과 수합 업무는 바로 긴급 업무가 됩니다.</p></div></div></div></div>
+    <div class="footer"><span>도구의 부재보다, 경로의 분산과 수동 기록이 문제였다.</span><span>05 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="문제 재정의">
+    <div class="kicker">Problem reframing</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><h2>기능이 아니라, <span class="accent">문제를 다시 정의</span>했습니다.</h2><div class="reframe"><article class="problem"><small>처음에 생각한 문제</small><p>메신저와 공문에서<br>일정을 자동 수집하는<br>기능의 부재</p></article><div class="pivot">→</div><article class="problem new"><small>인터뷰 이후</small><p><span class="orange">다양한 경로</span>로 전달된 일정을<br>편리하게 수집하고 정리하기</p></article></div></div></div>
+    <div class="footer"><span>복잡한 기능보다 단순하고 간결한 수집 경험</span><span>06 / 17</span></div>
+  </section>
+
+  <section class="slide rose" data-title="기능 전환">
+    <div class="kicker">How CatMoa works</div>
+    <div class="slide-body"><div class="chapter"><div class="num">08</div><h2>고양이는 어떻게<br>업무를 모을까요?</h2><p>CatMoa를 만든 여덟 가지 선택</p></div></div>
+    <div class="footer"><span>From friction to flow</span><span>07 / 17</span></div>
+  </section>
+
+  <section class="slide dark" data-title="CatMoa 영상">
+    <div class="kicker">Watch CatMoa in action</div>
+    <div class="slide-body">
+      <div class="video-wrap">
+        <div class="video-copy">
+          <span class="pill" style="width:max-content">Demo video</span>
+          <h2>고양이가<br><span class="accent">업무를 모으는</span><br>모습을 확인해보세요.</h2>
+          <p class="lead">재생 버튼을 누르면 YouTube 영상이 시작됩니다.</p>
+          <a class="video-link" href="https://www.youtube.com/watch?v=dnzbR_AT910" target="_blank" rel="noopener">YouTube에서 크게 보기 ↗</a>
         </div>
-        <article class="widget card reveal" style="--i:2"><div class="widget-title">고양이를 클릭해 상태를 바꿔보세요</div>
-          <div class="status" data-state><img src="assets/image2.png" alt="대기 중"><h3>대기 중</h3><p>뭐든 던져주세요</p></div>
-          <div class="status"><img src="assets/image3.png" alt="서류 뒤지는 중"><h3>서류 뒤지는 중</h3><p>문서 읽기 · 쪽지 확인</p></div>
-          <div class="status"><img src="assets/image8.png" alt="냠냠"><h3>냠냠</h3><p>AI가 일정 분석 중</p></div>
-          <div class="status"><img src="assets/image6.png" alt="완료"><h3>완료!</h3><p>캘린더 · 태스크 등록</p></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="교사의 맥락">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">07</span><div><h2>교사의 언어와 맥락을 이해하는 추출</h2><p class="sub">학교 현장의 표현을 그대로 알아듣는 설계</p></div></div></header>
-      <div class="context-grid">
-        <article class="context card reveal" style="--i:1"><div class="icon">👤</div><div><strong>내 역할 기반 필터</strong><p>담임 학년·담당 교과를 등록하면 나와 무관한 쪽지는 알림만</p></div></article>
-        <article class="context card reveal" style="--i:2"><div class="icon">🕒</div><div><strong>학교 시간 해석</strong><p>“3교시”, “점심시간”, “퇴근 전”을 실제 시각으로 변환</p></div></article>
-        <article class="context card reveal" style="--i:3"><div class="icon">📆</div><div><strong>상대 날짜 해석</strong><p>“다음 주 목요일” 같은 표현과 주간계획서의 여러 항목 처리</p></div></article>
-        <article class="context card reveal" style="--i:4"><div class="icon">↔</div><div><strong>일정 / 할 일 자동 분리</strong><p>날짜가 없어도 할 일로 추출해 양쪽에 등록 가능</p></div></article>
-        <article class="context card reveal" style="--i:5"><div class="icon">✓</div><div><strong>등록 전 검토 창</strong><p>대상·알람·내용을 확인하고 수정한 뒤 등록</p></div></article>
-        <article class="context card reveal" style="--i:6"><div class="icon">≠</div><div><strong>중복 검사</strong><p>건너뛰기 · 기존 갱신 · 새로 등록 중 선택</p></div></article>
-      </div>
-    </section>
-
-    <section class="slide standard" data-title="열린 구조">
-      <header class="headline reveal" style="--i:0"><div class="kicker"><span class="num">08</span><div><h2>학교 환경에 맞춰 고를 수 있는 구조</h2><p class="sub">모델도, 운영체제도, 코드도 열려 있습니다</p></div></div></header>
-      <div class="choice-layout">
-        <div class="choice-list">
-          <article class="choice card reveal" style="--i:1"><strong>LLM 선택</strong><p>Claude · ChatGPT · Gemini · Upstage<br>외부 전송이 부담이면 Ollama로 전환</p></article>
-          <article class="choice card reveal" style="--i:2"><strong>설치 환경</strong><p>macOS · Windows · Linux · 시작 시 자동 실행 · 자동 업데이트</p></article>
-          <article class="choice card reveal" style="--i:3"><strong>개방성</strong><p>오픈소스 · MIT 라이선스 · 별도 서버 없이 내 PC에서 동작</p></article>
-          <article class="choice card reveal" style="--i:4"><strong>보안</strong><p>API 키와 토큰은 운영체제 키체인에 안전하게 보관</p></article>
+        <div class="video-frame">
+          <iframe src="https://www.youtube-nocookie.com/embed/dnzbR_AT910?rel=0" title="CatMoa 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
         </div>
-        <img class="choice-cat cat float reveal" style="--i:2" src="assets/image5.png" alt="만족한 고양이" />
       </div>
-    </section>
+    </div>
+    <div class="footer"><span class="brand"><i class="brand-dot"></i>CatMoa · Demo</span><span>08 / 18</span></div>
+  </section>
 
-    <section class="slide final" data-title="한 문장으로">
-      <div class="final-wrap">
-        <div class="eyebrow reveal" style="--i:0">한 문장으로 정리하면</div>
-        <h2 class="reveal" style="--i:1">흩어진 업무 자료를 손쉽게 <span>던지면,</span><br>개인정보는 로컬에서 <span>걸러내고,</span><br>단계별 AI가 일정과 할 일을 <span>판단하여</span><br>Google Calendar와 Tasks로 보내주는 도구.</h2>
-        <div class="end-chip reveal" style="--i:3">CatMoa · 교사의 시간을 다시 교사에게</div>
-      </div>
-      <img class="final-cat" src="assets/image2.png" alt="" />
-    </section>
-  </main>
+  <section class="slide" data-title="쉬운 설치와 연동">
+    <div class="kicker">Feature 01</div>
+    <div class="slide-body"><div class="split"><div><div class="feature-head"><div class="feature-no">01</div><div><h2>설치와 Google 연동이<br><span class="accent">아주 쉬움</span></h2><p>내려받기에서 실행, 연동까지 단순하게</p></div></div><div class="checklist"><div class="check"><i>✓</i><div><h3>내려받아 더블클릭</h3><p>Python 설치나 서버 구축 없이 실행 파일 하나로 끝</p></div></div><div class="check"><i>✓</i><div><h3>JSON 키 없는 Google 로그인</h3><p>브라우저 로그인 한 번, 토큰은 OS 키체인에 저장</p></div></div><div class="check"><i>✓</i><div><h3>첫 설정 약 1분</h3><p>LLM 선택 → API 키 → 연결 테스트 → Google 로그인</p></div></div><div class="check"><i>✓</i><div><h3>배울 것이 없는 사용법</h3><p>창을 찾지 말고 화면 위 고양이에 자료만 던지기</p></div></div></div></div><div class="cat-stage"><img class="cat small" src="assets/image3.png" alt="준비된 CatMoa"></div></div></div>
+    <div class="footer"><span>macOS · Windows · Linux</span><span>08 / 17</span></div>
+  </section>
 
-  <div id="progress"></div><div id="counter">01 / 12</div>
-  <button id="helpBtn" aria-label="도움말">?</button>
-  <nav id="nav" aria-label="슬라이드 이동"><button id="prev" aria-label="이전 슬라이드">←</button><button id="next" aria-label="다음 슬라이드">→</button></nav>
-  <canvas id="fx"></canvas>
-  <aside id="detailOverlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
-    <article class="detail-panel">
-      <button class="detail-close" aria-label="상세 설명 닫기">×</button>
-      <span class="detail-index">INTERACTIVE DETAIL</span>
-      <h3 id="detailTitle"></h3>
-      <div class="detail-visual" id="detailVisual" aria-hidden="true"></div>
-      <p class="detail-lead" id="detailLead"></p>
-      <div class="detail-flow" id="detailFlow"></div>
-      <div class="detail-tags" id="detailTags"></div>
-      <div class="detail-tip"><span>💡</span><div><strong>그래서 좋은 점</strong><span id="detailTip"></span></div></div>
-    </article>
-  </aside>
-  <aside id="help"><div class="help-card"><h3>발표 컨트롤</h3><div class="key-row"><span>다음 / 이전 슬라이드</span><span><kbd>→</kbd> <kbd>←</kbd></span></div><div class="key-row"><span>전체 화면</span><kbd>F</kbd></div><div class="key-row"><span>슬라이드 한눈에 보기</span><kbd>O</kbd></div><div class="key-row"><span>효과 터뜨리기</span><kbd>C</kbd></div><div class="key-row"><span>도움말 닫기</span><kbd>Esc</kbd></div></div></aside>
+  <section class="slide" data-title="네 가지 입력 방식">
+    <div class="kicker">Feature 02</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">02</div><div><h2>자료의 형태를 가리지 않는<br><span class="accent">네 가지 입력 방식</span></h2><p>교사가 업무를 찾아 정리하는 대신, 흩어진 업무가 한곳으로 모입니다.</p></div></div><div class="routes"><article class="route"><span class="n">01 · MESSAGE</span><div class="route-icon">💬</div><p>쿨메신저<br>새 쪽지</p><span>학교 업무 메신저의 전달사항</span><div class="method">자동으로 가져오기</div></article><article class="route"><span class="n">02 · TEXT</span><div class="route-icon">📋</div><p>단체 채팅방<br>메모</p><span>단톡방 공지, 메모 앱의 내용</span><div class="method">복사 · 붙여넣기</div></article><article class="route"><span class="n">03 · FILE</span><div class="route-icon">📄</div><p>공문<br>안내문</p><span>한글·PDF·화면 캡처 이미지</span><div class="method">드래그 · 캡처</div></article><article class="route"><span class="n">04 · VOICE</span><div class="route-icon">🎙️</div><p>회의<br>구두 전달</p><span>문득 떠오른 일정과 이동 중 메모</span><div class="method">휴대폰 음성 입력</div></article></div></div></div>
+    <div class="footer"><span>수집의 입구는 넓게, 사용법은 단순하게</span><span>09 / 17</span></div>
+  </section>
 
-  <script>
+  <section class="slide dark" data-title="로컬 개인정보 보호">
+    <div class="kicker">Feature 03 · Privacy by design</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">03</div><div><h2>개인정보는 외부로 나가기 전,<br><span class="accent">로컬에서 차단</span></h2><p style="color:rgba(255,255,255,.58)">규칙 기반 + 경량 토큰 분류 모델의 2단 비식별화</p></div></div><div class="pipeline"><article class="pipe"><div class="pipe-icon">📝</div><h3>원문</h3><p>이름, 학교명, 전화번호 등이 포함된 업무 자료</p></article><div class="pipe-arrow">›</div><article class="pipe"><div class="pipe-icon">🛡️</div><h3>로컬 탐지</h3><p>규칙 기반 탐지와 문맥 판단 모델을 내 PC에서 실행</p></article><div class="pipe-arrow">›</div><article class="pipe"><div class="pipe-icon">▧</div><h3>비식별 텍스트</h3><p>민감정보를 마스킹한 안전한 텍스트만 생성</p></article><div class="pipe-arrow">›</div><article class="pipe"><div class="pipe-icon">✨</div><h3>외부 AI 분석</h3><p>개인정보가 제거된 내용만 선택한 AI로 전달</p></article></div></div></div>
+    <div class="footer"><span>개인정보 보호를 옵션이 아닌 기본값으로</span><span>10 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="단계별 AI 하네스">
+    <div class="kicker">Feature 04 · Staged AI harness</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">04</div><div><h2>한 번에 다 시키지 않고,<br><span class="accent">좁은 판단으로 쪼갭니다.</span></h2><p>단계별 하네스로 모델 혼동을 줄이고 출력의 안정성을 높입니다.</p></div></div><div class="steps"><article class="step"><span class="step-n">STEP 01</span><h3>추출</h3><p>입력에서 기록해야 할 일정이나 업무 후보를 찾습니다.</p></article><article class="step"><span class="step-n">STEP 02</span><h3>판단 · 분류</h3><p>나의 업무인지, 일정인지 할 일인지, 상대 날짜가 언제인지 판단합니다.</p></article><article class="step"><span class="step-n">STEP 03</span><h3>검증</h3><p>형식을 규칙 기반 검증기로 확인하고, 등록 전에 사람이 최종 검토합니다.</p></article></div><div class="tag-row"><span class="tag">모델 혼동 감소</span><span class="tag">안정적인 출력</span><span class="tag">작은 로컬 모델에도 유리</span></div></div></div>
+    <div class="footer"><span>정확도는 거대한 프롬프트가 아니라 구조에서</span><span>11 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="Google 도구 활용">
+    <div class="kicker">Feature 05</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">05</div><div><h2>AI는 정리하고,<br><span class="blue">관리는 검증된 도구</span>에</h2><p>새 서비스를 만들지 않고 Google Calendar와 Tasks를 활용합니다.</p></div></div><div class="google-grid"><article class="google-card"><div class="gicon cal">31</div><div><h3>일정 → Google Calendar</h3><p>알림, 반복 일정, 모바일·PC 동기화를 그대로 사용</p></div></article><article class="google-card"><div class="gicon task">✓</div><div><h3>해야 할 일 → Google Tasks</h3><p>마감, 완료 처리, 인박스 수집을 익숙한 방식 그대로</p></div></article><div class="benefits"><div class="benefit">기존 Google 동기화</div><div class="benefit">안정화된 기능 활용</div><div class="benefit">별도 일정 DB 없음</div><div class="benefit">프로그램을 꺼도 확인</div></div></div></div></div>
+    <div class="footer"><span>데이터는 사용자의 Google 계정에만 저장</span><span>12 / 17</span></div>
+  </section>
+
+  <section class="slide sunny" data-title="고양이 인터페이스">
+    <div class="kicker">Feature 06 · Ambient interface</div>
+    <div class="slide-body"><div class="split"><div><div class="feature-head"><div class="feature-no">06</div><div><h2>화면 한구석의 고양이,<br><span class="accent">개입은 최소로</span></h2><p style="color:rgba(16,18,24,.6)">프로그램을 여는 순간 자체를 없앤 인터페이스</p></div></div><div class="checklist"><div class="check"><i>✓</i><div><h3>항상 곁에 있는 작은 위젯</h3><p>창을 열고 닫는 과정 없이 던지면 바로 처리</p></div></div><div class="check"><i>✓</i><div><h3>표정으로 알리는 상태</h3><p>대기 · 문서 읽기 · 분석 · 완료 · 오류를 한눈에</p></div></div><div class="check"><i>✓</i><div><h3>방해하지 않는 존재감</h3><p>크기 조절, 트레이 숨기기, 작업표시줄 미점유</p></div></div></div></div><div class="states"><div class="state"><img src="assets/image8.png" alt="대기 중"><b>대기 중</b><span>뭐든 던져주세요</span></div><div class="state"><img src="assets/image2.png" alt="서류 찾는 중"><b>서류 찾는 중</b><span>문서 읽기</span></div><div class="state"><img src="assets/image6.png" alt="분석 중"><b>냠냠</b><span>AI 분석 중</span></div><div class="state"><img src="assets/image7.png" alt="완료"><b>완료!</b><span>등록 완료</span></div></div></div></div>
+    <div class="footer"><span>연달아 넣어도 통합 큐에서 순서대로</span><span>13 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="교사 맥락 이해">
+    <div class="kicker">Feature 07 · School context</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">07</div><div><h2>일반 일정이 아니라,<br><span class="accent">교사의 언어와 맥락</span>을 이해</h2><p>학교 현장에서 실제로 쓰는 표현을 그대로 알아듣도록 설계했습니다.</p></div></div><div class="context-grid"><article class="context"><div class="cicon">👤</div><h3>내 역할 기반 필터</h3><p>담임 학년과 담당 교과를 바탕으로 나와 무관한 쪽지는 알림만</p></article><article class="context"><div class="cicon">🕒</div><h3>학교 시간 해석</h3><p>“3교시”, “점심시간”, “퇴근 전”을 실제 시각으로 변환</p></article><article class="context"><div class="cicon">📅</div><h3>상대 날짜 해석</h3><p>“다음 주 목요일”과 주간계획서의 여러 항목을 한 번에 처리</p></article><article class="context"><div class="cicon">↔️</div><h3>일정 / 할 일 분리</h3><p>날짜가 없어도 할 일로 추출하고 양쪽 등록 가능</p></article><article class="context"><div class="cicon">✍️</div><h3>등록 전 검토</h3><p>대상, 알람, 내용을 확인하고 수정한 뒤 등록</p></article><article class="context"><div class="cicon">◎</div><h3>중복 검사</h3><p>기존 항목과 비교해 건너뛰기, 갱신, 신규 등록 선택</p></article></div></div></div>
+    <div class="footer"><span>학교에서 쓰는 표현을, 학교에서 쓰는 시간으로</span><span>14 / 17</span></div>
+  </section>
+
+  <section class="slide dark" data-title="열린 구조">
+    <div class="kicker">Feature 08 · Open architecture</div>
+    <div class="slide-body"><div class="stack" style="width:100%"><div class="feature-head"><div class="feature-no">08</div><div><h2>학교 환경에 맞춰<br><span class="orange">고를 수 있는 구조</span></h2><p style="color:rgba(255,255,255,.58)">모델도, 운영체제도, 코드도 열려 있습니다.</p></div></div><div class="choices"><article class="choice"><div class="choice-icon">✨</div><h3>LLM 선택</h3><ul><li>Claude · ChatGPT · Gemini · Upstage</li><li>외부 전송이 부담이면 Ollama</li><li>필요와 예산에 맞춰 교체</li></ul></article><article class="choice"><div class="choice-icon">🖥️</div><h3>설치 환경</h3><ul><li>macOS · Windows · Linux</li><li>Python 없이 실행 파일로</li><li>자동 실행 · 업데이트 옵션</li></ul></article><article class="choice"><div class="choice-icon">⌘</div><h3>개방성</h3><ul><li>오픈소스 · MIT 라이선스</li><li>별도 서버 없이 내 PC에서</li><li>키와 토큰은 OS 키체인에</li></ul></article></div></div></div>
+    <div class="footer"><span>도구가 학교를 고르는 대신, 학교가 도구를 고르도록</span><span>15 / 17</span></div>
+  </section>
+
+  <section class="slide" data-title="사용 결과">
+    <div class="kicker">Result · 직접 사용해 본 결과</div>
+    <div class="slide-body"><div class="result"><div class="result-figure"><p class="lead">업무 일정 등록 시간</p><div class="ratio"><span>1</span><small>/3</small></div><h2>수준으로</h2></div><div class="bars"><div><div class="bar-label"><span>기존 방식</span><span>100</span></div><div class="track"><div class="fill old"></div></div></div><div><div class="bar-label"><span>CatMoa</span><span>33</span></div><div class="track"><div class="fill catmoa"></div></div></div><p class="lead">같은 업무 일정을 등록하는 데 걸린 시간 기준<br><strong style="color:var(--ink)">남는 시간은 다시, 학생에게.</strong></p></div></div></div>
+    <div class="footer"><span>실제 사용 경험에 따른 비교</span><span>16 / 17</span></div>
+  </section>
+
+  <section class="slide dark" data-title="한 문장 요약">
+    <div class="kicker">In one sentence</div>
+    <div class="slide-body"><div class="manifesto"><div><p class="lead" style="margin-bottom:20px">한 문장으로 정리하면</p><h2><span>흩어진 업무 자료를 <b class="orange">손쉽게 던지면,</b></span><span>개인정보는 <b class="line3">로컬에서 걸러내고,</b></span><span>단계별 AI가 일정과 할 일을 판단해</span><span class="line2">Calendar와 Tasks로 보내주는 도구.</span></h2></div><div class="cat-stage"><img class="cat" src="assets/image9.png" alt="인사하는 CatMoa"></div></div></div>
+    <div class="footer"><span class="brand"><i class="brand-dot"></i>CatMoa · 감사합니다</span><span>17 / 17</span></div>
+  </section>
+</main>
+
+<div class="hint" id="hint">← → 이동 · F 전체화면 · R 애니메이션 다시 보기</div>
+<nav class="controls" aria-label="발표 조작">
+  <button class="ctrl" id="prev" aria-label="이전 슬라이드">←</button>
+  <button class="ctrl" id="next" aria-label="다음 슬라이드">→</button>
+  <button class="ctrl" id="full" aria-label="전체화면">⛶</button>
+</nav>
+<div class="progress" id="progress"></div>
+<script>
+  (() => {
     const slides = [...document.querySelectorAll('.slide')];
-    const progress = document.querySelector('#progress');
-    const counter = document.querySelector('#counter');
-    const help = document.querySelector('#help');
-    const detailOverlay = document.querySelector('#detailOverlay');
-    const canvas = document.querySelector('#fx');
-    const ctx = canvas.getContext('2d');
-    let current = Math.max(0, Math.min(slides.length - 1, +(location.hash.slice(1) || 1) - 1));
-    let overview = false, particles = [], raf;
-
-    function resize(){ canvas.width = innerWidth * devicePixelRatio; canvas.height = innerHeight * devicePixelRatio; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
-    addEventListener('resize', resize); resize();
-
-    const details = {
-      '내려받아 더블클릭': {
-        lead:'설치 과정에서 기술적인 선택을 없앴습니다. 사용자는 운영체제에 맞는 실행 파일만 내려받으면 됩니다.',
-        steps:['운영체제에 맞는 설치 파일 선택','일반 프로그램처럼 더블클릭','화면 위에 CatMoa 위젯 등장'],
-        tags:['Python 불필요','서버 불필요','3개 OS 지원'], tip:'학교 PC에서도 별도 개발 환경 없이 바로 시작할 수 있습니다.'
-      },
-      'JSON 키 없는 Google 로그인': {
-        lead:'복잡한 Google Cloud Console 설정 대신, 익숙한 브라우저 로그인 흐름을 사용합니다.',
-        steps:['연결 버튼 클릭','브라우저에서 Google 계정 선택','Calendar · Tasks 권한 확인','토큰을 OS 키체인에 암호화 보관'],
-        tags:['OAuth','OS 키체인','Calendar','Tasks'], tip:'API 인증 파일을 만들거나 복사하는 과정이 없습니다.'
-      },
-      '첫 설정 약 1분': {
-        lead:'처음 실행했을 때 꼭 필요한 선택만 한 화면에 모았습니다.',
-        steps:['사용할 AI 공급자 선택','API 키 입력 후 연결 테스트','Google 계정 로그인','즉시 자료 수집 시작'],
-        tags:['빠른 온보딩','연결 테스트','원페이지 설정'], tip:'입력값이 잘못되면 다음 단계로 넘어가기 전에 바로 알려줍니다.'
-      },
-      '배울 것이 없는 사용법': {
-        lead:'메뉴 구조를 익히는 대신, 현실에서 서류를 건네듯 고양이에게 자료를 던집니다.',
-        steps:['파일·텍스트·이미지 준비','화면 위 고양이로 드래그','표정으로 처리 상태 확인','검토 후 일정 등록'],
-        tags:['Drag & Drop','Ctrl+V','상태 피드백'], tip:'사용법을 기억하게 하지 않고 이미 알고 있는 행동을 활용했습니다.'
-      },
-      '자동으로 가져오기': {
-        lead:'쿨메신저의 새 쪽지를 일정 후보로 가져오되, 곧바로 등록하지 않고 사용자가 확인하게 합니다.',
-        steps:['새 쪽지 주기적 확인','일정·업무 가능성이 있는 내용 선별','CatMoa 처리 큐에 추가','등록 전 사용자 검토'],
-        tags:['쿨메신저','자동 감지','검토 우선'], tip:'자동화의 편리함은 얻고, 잘못 등록될 위험은 검토 단계에서 줄입니다.'
-      },
-      '복사 · 붙여넣기': {
-        lead:'단체 채팅방이나 메모처럼 직접 연결하기 어려운 경로도 클립보드 하나로 수집합니다.',
-        steps:['필요한 메시지 범위 선택','Ctrl+C로 복사','고양이 위에서 Ctrl+V','여러 메시지에서 일정 후보 분리'],
-        tags:['클립보드','단톡방','메모'], tip:'앱별 연동을 기다리지 않아도 어떤 텍스트든 즉시 처리할 수 있습니다.'
-      },
-      '드래그 앤 드롭 · 캡처': {
-        lead:'한글 문서, PDF, 안내문 이미지처럼 형태가 다른 자료를 동일한 입력 경험으로 처리합니다.',
-        steps:['파일을 고양이 위로 드래그','문서 종류 자동 판별','텍스트·표·이미지 내용 추출','업무와 날짜 후보 생성'],
-        tags:['HWP','PDF','OCR','이미지'], tip:'화면에만 보이는 정보는 캡처 후 붙여넣어도 같은 방식으로 작동합니다.'
-      },
-      '휴대폰 음성 입력': {
-        lead:'PC 앞이 아닐 때 떠오른 일정은 휴대폰 음성 입력으로 Google Tasks 인박스에 남깁니다.',
-        steps:['휴대폰에서 Tasks 열기','음성으로 메모 남기기','CatMoa가 인박스 불러오기','학교 맥락에 맞춰 재분류'],
-        tags:['모바일','음성 입력','Tasks Inbox'], tip:'회의 직후 이동 중에도 기억이 사라지기 전에 수집할 수 있습니다.'
-      },
-      '규칙 기반 탐지': {
-        lead:'형태가 정해진 민감정보는 빠르고 예측 가능한 규칙으로 PC 안에서 먼저 찾아냅니다.',
-        steps:['문서에서 숫자·기호 패턴 검색','주민번호·전화번호·이메일 판별','원문 위치만 마스킹','비식별 결과를 다음 단계로 전달'],
-        tags:['100% 로컬','정규식','즉시 마스킹'], tip:'탐지와 마스킹은 외부 AI 호출 전에 완료됩니다.'
-      },
-      '경량 토큰 분류 모델': {
-        lead:'정규식만으로 찾기 어려운 이름과 학교명은 문장 속 역할과 주변 단어를 함께 봅니다.',
-        steps:['문장을 작은 토큰으로 분리','로컬 Encoder 모델이 문맥 분석','이름·기관명 범위 표시','규칙 탐지 결과와 합쳐 마스킹'],
-        tags:['Encoder-only','문맥 탐지','로컬 추론'], tip:'작은 모델을 사용해 일반 학교 PC에서도 부담을 낮췄습니다.'
-      },
-      '추출': {
-        lead:'첫 단계는 해석을 욕심내지 않고, 기록할 가치가 있는 문장만 골라냅니다.',
-        steps:['입력 텍스트 정리','업무·일정 후보 문장 선택','잡담과 서명·꼬리말 제거','후보별 독립 항목 생성'],
-        tags:['후보 추출','노이즈 제거','단일 책임'], tip:'한 단계에 한 가지 판단만 맡겨 프롬프트 간섭을 줄입니다.'
-      },
-      '판단 · 분류': {
-        lead:'선별된 후보를 교사의 역할과 학교 시간표 맥락으로 해석합니다.',
-        steps:['내 담당 업무인지 판단','일정과 할 일 구분','상대 날짜와 교시 표현 해석','제목·설명·알림값 구성'],
-        tags:['역할 필터','시간 해석','일정 분류'], tip:'“다음 주 3교시” 같은 학교 표현을 실제 날짜와 시각으로 바꿉니다.'
-      },
-      '검증': {
-        lead:'AI의 답을 그대로 믿지 않고 형식 규칙과 사람의 확인을 차례로 거칩니다.',
-        steps:['필수 필드와 날짜 형식 검사','기존 일정과 중복 비교','수정 가능한 검토 창 표시','승인된 항목만 Google에 등록'],
-        tags:['규칙 검증','중복 검사','Human-in-the-loop'], tip:'틀릴 수 있는 AI를 안전하게 쓰기 위한 핵심 단계입니다.'
-      },
-      'Google Calendar': {
-        lead:'시간이 정해진 항목은 새 캘린더가 아니라 이미 사용 중인 Google Calendar로 보냅니다.',
-        steps:['날짜·시각·반복 여부 확인','사용자 캘린더 선택','알림 설정과 함께 등록','모바일·PC에 즉시 동기화'],
-        tags:['일정','알림','반복','동기화'], tip:'CatMoa를 종료해도 등록된 일정과 알림은 그대로 작동합니다.'
-      },
-      'Google Tasks': {
-        lead:'시간보다 완료 여부가 중요한 업무는 할 일로 분리해 관리합니다.',
-        steps:['마감일과 업무 내용 확인','사용자 Task 목록 선택','설명과 출처를 함께 등록','완료 상태를 모든 기기에서 동기화'],
-        tags:['할 일','마감일','완료 처리'], tip:'날짜가 없는 업무도 버리지 않고 인박스에 안전하게 모읍니다.'
-      },
-      '내 역할 기반 필터': {
-        lead:'같은 공지를 받아도 교사마다 해야 할 일이 다르다는 점을 반영합니다.',
-        steps:['담임 학년·과목·업무 등록','메시지의 대상 표현 분석','내 역할과 관련성 비교','무관한 내용은 등록 대신 알림만'],
-        tags:['개인화','담임','담당 교과'], tip:'모든 공지를 일정으로 만드는 과잉 자동화를 막습니다.'
-      },
-      '학교 시간 해석': {
-        lead:'교사가 실제로 쓰는 시간 표현을 학교별 시간표 설정과 연결합니다.',
-        steps:['교시·점심·퇴근 표현 탐지','학교별 시간표 조회','실제 시작·종료 시각 변환','캘린더 시간값으로 저장'],
-        tags:['교시','점심시간','학교별 설정'], tip:'학교마다 다른 수업 시작 시간을 설정에서 바꿀 수 있습니다.'
-      },
-      '상대 날짜 해석': {
-        lead:'작성일과 대화 맥락을 기준으로 “다음 주 목요일” 같은 표현을 정확한 날짜로 바꿉니다.',
-        steps:['문서 작성일·수신일 확인','오늘·내일·다음 주 표현 추출','연도와 월 경계 계산','애매하면 검토 창에서 강조'],
-        tags:['상대 날짜','기준일','모호성 표시'], tip:'확신이 낮은 날짜는 자동 확정하지 않고 눈에 띄게 표시합니다.'
-      },
-      'LLM 선택': {
-        lead:'학교의 보안 정책과 비용, 원하는 품질에 따라 분석 모델을 바꿀 수 있습니다.',
-        steps:['클라우드 또는 로컬 방식 선택','공급자와 모델 지정','연결·응답 형식 테스트','동일한 단계별 파이프라인에 연결'],
-        tags:['Claude','ChatGPT','Gemini','Ollama'], tip:'모델이 바뀌어도 나머지 사용 흐름은 그대로 유지됩니다.'
-      },
-      '개방성': {
-        lead:'특정 회사의 서비스에 잠기지 않도록 코드와 저장 구조를 투명하게 열어두었습니다.',
-        steps:['MIT 라이선스로 소스 공개','별도 중앙 서버 없이 실행','Google 계정에 결과 저장','필요하면 학교 환경에 맞게 수정'],
-        tags:['Open Source','MIT','No Server'], tip:'서비스가 중단되어도 내 일정 데이터는 Google 계정에 남습니다.'
-      }
-    };
-
-    // 원본 PPT의 발표 노트를 바탕으로 만든 실제 교사 사용 예시
-    const examples = {
-      '내려받아 더블클릭':['기존 도구','Python 설치 → 서버 설정 → 실행 명령어 입력','CatMoa','설치 파일을 더블클릭하면 고양이 위젯이 바로 나타남'],
-      'JSON 키 없는 Google 로그인':['기존 방식','Google Cloud에서 JSON 인증 파일을 직접 만들어야 함','CatMoa','브라우저에서 Google 계정을 한 번 선택하면 연결 완료'],
-      '첫 설정 약 1분':['처음 실행','AI 공급자와 API 키를 선택하고 연결 테스트','준비 완료','Google 로그인까지 마치면 바로 자료를 넣을 수 있음'],
-      '배울 것이 없는 사용법':['교사가 하는 일','공문 PDF나 캡처 이미지를 고양이 위로 끌어놓기','CatMoa가 하는 일','내용을 읽고 일정과 할 일 후보를 정리해 보여줌'],
-      '자동으로 가져오기':['쿨메신저 쪽지','“금요일까지 체험학습 서류를 수합해 주세요.”','정리 결과','할 일 · 체험학습 서류 수합 · 마감: 금요일'],
-      '복사 · 붙여넣기':['단체 채팅방','“다음 주 목요일 3교시에 공개수업이 있습니다.”','정리 결과','일정 · 공개수업 · 다음 주 목요일 3교시'],
-      '드래그 앤 드롭 · 캡처':['받은 자료','한글 공문, PDF 안내문 또는 화면 캡처','정리 결과','문서 속 여러 일정과 제출 업무를 각각 분리'],
-      '휴대폰 음성 입력':['이동 중 음성 메모','“다음 주 학년회의 준비물 확인하기”','정리 결과','Google Tasks 인박스에서 불러와 할 일로 정리'],
-      '규칙 기반 탐지':['AI에 보내기 전 원문','“김교사 010-1234-5678 / 900101-1234567”','로컬에서 변환','“김교사 [전화번호] / [주민등록번호]”'],
-      '경량 토큰 분류 모델':['숫자 규칙으로 찾기 어려운 문장','“김민수 학생과 한빛초 상담실에서 면담”','로컬에서 변환','“[이름] 학생과 [학교명] 상담실에서 면담”'],
-      '추출':['긴 업무 메시지','인사말·안내·서명 사이에 제출 일정과 회의 공지가 섞여 있음','1단계 결과','기록할 일정과 업무 문장만 골라 각각 분리'],
-      '판단 · 분류':['추출된 두 문장','“10일 3교시 안전교육” / “결과 보고서 제출”','2단계 결과','안전교육은 일정, 보고서 제출은 할 일로 분류'],
-      '검증':['AI가 만든 후보','날짜 형식이 틀리거나 기존 일정과 겹칠 수 있음','3단계 결과','규칙 검사와 중복 확인 후 교사가 최종 승인'],
-      'Google Calendar':['시간이 정해진 내용','“다음 주 화요일 14시 학부모 상담”','Calendar 등록','날짜·시간·알림이 포함된 일정으로 모든 기기에 동기화'],
-      'Google Tasks':['완료가 중요한 내용','“가정통신문 회신 취합하기”','Tasks 등록','할 일 목록에 저장하고 완료 여부를 관리'],
-      '내 역할 기반 필터':['등록한 내 역할','3학년 담임 · 과학 담당','쪽지를 받았을 때','3학년 관련 업무는 등록 후보, 5학년 공지는 알림만 표시'],
-      '학교 시간 해석':['학교식 표현','“내일 3교시에 시청각실에서 안전교육”','일반 시간으로 변환','학교 시간표의 3교시 시작·종료 시각으로 일정 생성'],
-      '상대 날짜 해석':['상대적인 표현','“다음 주 목요일까지 제출”','실제 날짜로 변환','쪽지를 받은 날짜를 기준으로 정확한 마감일 계산'],
-      'LLM 선택':['품질을 우선하는 학교','Claude · ChatGPT · Gemini 등 클라우드 모델 선택','외부 전송이 어려운 학교','내 PC에서만 동작하는 Ollama 모델 선택'],
-      '개방성':['CatMoa를 사용하지 않을 때도','등록 결과는 별도 CatMoa 서버가 아니라 내 Google 계정에 저장','결과','프로그램을 꺼도 Calendar와 Tasks에서 계속 확인 가능']
-    };
-
-    const categoryLabels = {
-      download:'쉬운 시작', oauth:'쉬운 Google 연결', setup:'1분 시작', throw:'직관적인 사용법',
-      message:'쿨메신저 자동 수집', clipboard:'단톡방·메모 수집', document:'공문·파일 수집', mic:'이동 중 음성 수집',
-      mask:'개인정보 보호 1단계', context:'개인정보 보호 2단계', extract:'AI 처리 1단계', classify:'AI 처리 2단계', verify:'AI 처리 3단계',
-      calendar:'일정 관리', tasks:'할 일 관리', role:'학교 맥락 이해', clock:'학교 시간 이해', date:'날짜 표현 이해', models:'학교별 모델 선택', open:'열린 저장 구조'
-    };
-    const flowLabels = {
-      download:'설치는 이렇게 끝납니다', oauth:'Google 연결 과정', setup:'첫 실행에서 하는 일', throw:'자료를 넣으면',
-      message:'쪽지가 일정 후보가 되기까지', clipboard:'복사한 내용이 정리되기까지', document:'문서가 일정으로 바뀌기까지', mic:'음성 메모가 할 일이 되기까지',
-      mask:'외부 AI에 보내기 전', context:'문맥 속 개인정보를 찾는 과정', extract:'긴 글에서 필요한 내용만 찾기', classify:'찾은 내용을 일정과 할 일로 나누기', verify:'등록 전 마지막 안전장치',
-      calendar:'시간이 있는 업무의 이동 경로', tasks:'완료해야 하는 업무의 이동 경로', role:'나와 관련된 업무만 남기는 과정', clock:'교시를 실제 시각으로 바꾸기', date:'상대 날짜를 실제 날짜로 바꾸기', models:'학교 상황에 맞는 선택', open:'내 데이터가 저장되는 곳'
-    };
-
-    const visualSettings = {
-      '내려받아 더블클릭':['download','orange','cinematic','APP','↓','PC','✓'],
-      'JSON 키 없는 Google 로그인':['oauth','orange','wide','G','🔐','📅','✓'],
-      '첫 설정 약 1분':['setup','orange','compact','60s','AI','KEY','G'],
-      '배울 것이 없는 사용법':['throw','orange','wide','🐱','📄','🖼️','💬'],
-      '자동으로 가져오기':['message','orange','compact','IN','새 쪽지','업무 공지','일정 후보'],
-      '복사 · 붙여넣기':['clipboard','orange','cinematic','⌘V','복사','메모','붙여넣기'],
-      '드래그 앤 드롭 · 캡처':['document','orange','wide','DROP','HWP','PDF','IMG'],
-      '휴대폰 음성 입력':['mic','orange','compact','🎙','♪','〰','♪'],
-      '규칙 기반 탐지':['mask','dark','cinematic','▓▓','010-1234','123456-','name@'],
-      '경량 토큰 분류 모델':['context','violet','wide','AI','이름','학교명','문맥'],
-      '추출':['extract','violet','compact','핵심','잡담','서명','일정'],
-      '판단 · 분류':['classify','violet','wide','분류','일정','할 일','나의 업무'],
-      '검증':['verify','violet','cinematic','✓','형식','중복','검토'],
-      'Google Calendar':['calendar','blue','wide','SEP 05','09:00','13:30','16:40'],
-      'Google Tasks':['tasks','green','compact','✓','수합하기','검토하기','제출하기'],
-      '내 역할 기반 필터':['role','green','wide','ME','담임','교과','업무'],
-      '학교 시간 해석':['clock','green','cinematic','3교시','09:50','12:20','16:30'],
-      '상대 날짜 해석':['date','green','compact','목','오늘','다음 주','D+7'],
-      'LLM 선택':['models','violet','wide','LLM','GPT','Gemini','Ollama'],
-      '개방성':['open','dark','cinematic','</>','MIT','LOCAL','FORK']
-    };
-
-    function buildVisual(key){
-      const [fromLabel,fromText,toLabel,toText]=examples[key];
-      return `<span class="example-label">실제 교사 상황으로 보면</span><div class="example-card"><small>${fromLabel}</small>${fromText}</div><span class="example-arrow">↓</span><div class="example-card result"><small>${toLabel}</small>${toText}</div>`;
-    }
-    function buildFlow(kind,steps){
-      const dayMarks=['01','02','03','04'];
-      const items=steps.map((step,i)=>`<div class="flow-item" style="--n:${i+1}" data-day="${dayMarks[i]}">${step}</div>`).join('');
-      return `<div class="flow-title">${flowLabels[kind]}</div><div class="flow-items">${items}</div>`;
-    }
-
-    function attachDetails(){
-      document.querySelectorAll('.card h3').forEach(h=>{
-        const key=h.textContent.trim(), data=details[key];
-        if(!data) return;
-        const card=h.closest('.card'); card.classList.add('has-detail'); card.dataset.detailKey=key;
-        card.setAttribute('aria-label',`${key} 상세 설명 열기`);
-        const hint=document.createElement('i'); hint.className='detail-hint'; hint.setAttribute('aria-hidden','true');
-        hint.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle class="click-ring" cx="17" cy="5" r="3"></circle><path d="M5 3.5v10.2l-2.3-2.3a2 2 0 0 0-2.8 2.8l5.8 5.8c.8.8 1.8 1.2 2.9 1.2h5.1a5.3 5.3 0 0 0 5.3-5.3v-5.2a1.8 1.8 0 0 0-3.6 0V9.2a1.8 1.8 0 0 0-3.6 0V7.7a1.8 1.8 0 0 0-3.6 0V3.5a1.6 1.6 0 0 0-3.2 0Z"></path></svg>';
-        card.appendChild(hint);
-      });
-    }
-    function openDetail(key){
-      const d=details[key]; if(!d) return;
-      const setting=visualSettings[key] || ['models','orange','wide',key,'•','•','•'];
-      const [kind,theme,layout]=setting;
-      const panel=detailOverlay.querySelector('.detail-panel');
-      panel.className=`detail-panel theme-${theme} layout-${layout}`;
-      document.querySelector('.detail-index').textContent=categoryLabels[kind];
-      document.querySelector('#detailTitle').textContent=key;
-      const visual=document.querySelector('#detailVisual');
-      visual.className=`detail-visual example-scene scene-${kind}`;
-      visual.innerHTML=buildVisual(key);
-      document.querySelector('#detailLead').textContent=d.lead;
-      const flow=document.querySelector('#detailFlow');
-      flow.className=`flow-board flow-${kind}`;
-      flow.innerHTML=buildFlow(kind,d.steps);
-      document.querySelector('#detailTags').innerHTML=d.tags.map(x=>`<span>${x}</span>`).join('');
-      document.querySelector('#detailTip').textContent=d.tip;
-      detailOverlay.classList.add('show');
-      confetti(innerWidth*.78,innerHeight*.25,28);
-    }
-    function closeDetail(){ detailOverlay.classList.remove('show'); }
-
-    function show(index, burst = false){
-      closeDetail();
-      current = (index + slides.length) % slides.length;
-      slides.forEach((s,i)=>{ s.classList.toggle('active', i===current); s.classList.toggle('prev', i<current); });
-      progress.style.width = `${((current+1)/slides.length)*100}%`;
-      counter.textContent = `${String(current+1).padStart(2,'0')} / ${String(slides.length).padStart(2,'0')}`;
-      history.replaceState(null,'',`#${current+1}`);
-      document.title = `${slides[current].dataset.title} — CatMoa`;
-      animateNumbers(slides[current]);
-      document.querySelectorAll('.attention').forEach(x=>x.classList.remove('attention'));
-      const firstInteractive=slides[current].querySelector('.has-detail');
-      if(firstInteractive) setTimeout(()=>firstInteractive.classList.add('attention'),650);
-      if(burst) confetti(innerWidth*.82, innerHeight*.22, current===slides.length-1 ? 120 : 32);
-    }
-
-    function animateNumbers(scope){
-      scope.querySelectorAll('[data-count]').forEach(el=>{
-        const target=+el.dataset.count, suffix=el.dataset.suffix||'', start=performance.now();
-        function tick(now){ const p=Math.min(1,(now-start)/900), eased=1-Math.pow(1-p,3), value=target%1 ? (target*eased).toFixed(1) : Math.round(target*eased); el.textContent=value+suffix; if(p<1) requestAnimationFrame(tick); }
-        requestAnimationFrame(tick);
-      });
-    }
-
-    function makeRipple(x,y){ const r=document.createElement('i'); r.className='ripple'; r.style.left=x+'px'; r.style.top=y+'px'; document.body.appendChild(r); setTimeout(()=>r.remove(),750); }
-    function confetti(x=innerWidth/2,y=innerHeight/2,count=42){
-      const colors=['#cb7d2b','#ef6d8e','#f7be3b','#72aa8a','#7296d8','#fff'];
-      for(let i=0;i<count;i++) particles.push({x,y,vx:(Math.random()-.5)*12,vy:-Math.random()*9-2,g:.18+Math.random()*.12,r:3+Math.random()*5,a:1,c:colors[i%colors.length],spin:Math.random()*6});
-      if(!raf) drawParticles();
-    }
-    function drawParticles(){
-      ctx.clearRect(0,0,innerWidth,innerHeight);
-      particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.a-=.012; p.spin+=.14; ctx.save(); ctx.globalAlpha=Math.max(0,p.a); ctx.translate(p.x,p.y); ctx.rotate(p.spin); ctx.fillStyle=p.c; ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r); ctx.restore(); });
-      particles=particles.filter(p=>p.a>0&&p.y<innerHeight+30);
-      if(particles.length) raf=requestAnimationFrame(drawParticles); else { cancelAnimationFrame(raf); raf=null; ctx.clearRect(0,0,innerWidth,innerHeight); }
-    }
-
-    function toggleOverview(force){ overview=force ?? !overview; document.body.classList.toggle('overview',overview); }
-    function fullscreen(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
-    document.querySelector('#next').onclick=e=>{e.stopPropagation();show(current+1,true)};
-    document.querySelector('#prev').onclick=e=>{e.stopPropagation();show(current-1)};
-    document.querySelector('#helpBtn').onclick=e=>{e.stopPropagation();help.classList.add('show')};
-    help.onclick=()=>help.classList.remove('show');
-    document.querySelector('.detail-close').onclick=e=>{e.stopPropagation();closeDetail()};
-    detailOverlay.addEventListener('click',e=>{if(e.target===detailOverlay)closeDetail()});
-    slides.forEach((s,i)=>s.addEventListener('click',e=>{
-      if(overview){ toggleOverview(false); show(i); return; }
-      makeRipple(e.clientX,e.clientY);
-      const detailCard=e.target.closest('.card[data-detail-key]');
-      if(detailCard){ openDetail(detailCard.dataset.detailKey); return; }
-      if(e.target.closest('.card')) { confetti(e.clientX,e.clientY,18); return; }
-      show(current+1,true);
-    }));
-    document.querySelectorAll('.status').forEach((row,i,all)=>row.addEventListener('click',()=>{ all.forEach(x=>x.style.outline=''); row.style.outline='3px solid #ee9a3a'; row.querySelector('img').animate([{transform:'scale(.8) rotate(-8deg)'},{transform:'scale(1.16) rotate(7deg)'},{transform:'scale(1)'}],{duration:550,easing:'ease-out'}); }));
-    addEventListener('keydown',e=>{
-      if(e.key==='Escape'){ help.classList.remove('show'); closeDetail(); if(overview)toggleOverview(false); return; }
-      if(detailOverlay.classList.contains('show')) return;
-      if(help.classList.contains('show')) return;
-      if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(current+1,true)}
-      if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(current-1)}
-      if(e.key.toLowerCase()==='f')fullscreen();
-      if(e.key.toLowerCase()==='o')toggleOverview();
-      if(e.key.toLowerCase()==='c')confetti(innerWidth/2,innerHeight/2,100);
-      if(e.key==='Home')show(0); if(e.key==='End')show(slides.length-1,true);
+    const progress = document.getElementById('progress');
+    slides.forEach((slide, index) => {
+      const counter = slide.querySelector('.footer > span:last-child');
+      if (counter) counter.textContent = `${String(index + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
     });
-    attachDetails();
-    show(current);
-    const linkedDetail=new URLSearchParams(location.search).get('detail');
-    if(linkedDetail && details[linkedDetail]) setTimeout(()=>openDetail(linkedDetail),500);
-  </script>
+    let current = Math.min(Math.max(Number(location.hash.slice(1)) - 1 || 0, 0), slides.length - 1);
+    let touchX = 0;
+    let lastWheel = 0;
+    function show(next, push = true) {
+      next = Math.min(Math.max(next, 0), slides.length - 1);
+      if (next === current && slides[next].classList.contains('active')) { update(); return; }
+      slides[current].classList.remove('active');
+      slides[current].classList.add('leaving');
+      setTimeout(() => slides.forEach(s => s.classList.remove('leaving')), 650);
+      current = next;
+      slides[current].classList.add('active');
+      if (push) history.replaceState(null, '', `#${current + 1}`);
+      update();
+    }
+    function update() {
+      progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+      document.title = `${String(current + 1).padStart(2,'0')} · ${slides[current].dataset.title} — CatMoa`;
+      document.getElementById('prev').disabled = current === 0;
+      document.getElementById('next').disabled = current === slides.length - 1;
+    }
+    function replay() {
+      const slide = slides[current];
+      slide.classList.remove('active');
+      void slide.offsetWidth;
+      slide.classList.add('active');
+    }
+    document.getElementById('prev').onclick = () => show(current - 1);
+    document.getElementById('next').onclick = () => show(current + 1);
+    document.getElementById('full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    addEventListener('keydown', e => {
+      if (['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)) { e.preventDefault(); show(current + 1); }
+      if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)) { e.preventDefault(); show(current - 1); }
+      if (e.key === 'Home') show(0); if (e.key === 'End') show(slides.length - 1);
+      if (e.key.toLowerCase() === 'f') document.getElementById('full').click();
+      if (e.key.toLowerCase() === 'r') replay();
+    });
+    addEventListener('wheel', e => {
+      const now = Date.now();
+      if (Math.abs(e.deltaY) > 60 && now - lastWheel > 650) {
+        lastWheel = now;
+        show(current + Math.sign(e.deltaY));
+      }
+    }, {passive:true});
+    addEventListener('touchstart', e => touchX = e.changedTouches[0].clientX, {passive:true});
+    addEventListener('touchend', e => { const d = touchX - e.changedTouches[0].clientX; if (Math.abs(d) > 50) show(current + Math.sign(d)); }, {passive:true});
+    addEventListener('pointermove', e => {
+      const stage = slides[current].querySelector('.cat-stage');
+      if (!stage || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const x = ((e.clientX / innerWidth) - .5) * 14;
+      const y = ((e.clientY / innerHeight) - .5) * 10;
+      stage.style.setProperty('--parallax-x', `${x}px`);
+      stage.style.setProperty('--parallax-y', `${y}px`);
+    }, {passive:true});
+    addEventListener('pointerleave', () => {
+      const stage = slides[current].querySelector('.cat-stage');
+      if (stage) { stage.style.removeProperty('--parallax-x'); stage.style.removeProperty('--parallax-y'); }
+    });
+    addEventListener('hashchange', () => show(Number(location.hash.slice(1)) - 1 || 0, false));
+    setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    update();
+  })();
+</script>
 </body>
 </html>
